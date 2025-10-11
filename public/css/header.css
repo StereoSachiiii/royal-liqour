@@ -1,0 +1,256 @@
+      /* Reset and box-sizing */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body{
+  position: relative;
+}
+
+/* Header container */
+header {
+    position: relative;           /* so title can be absolute */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 2rem;
+    background-color: #fff;       /* optional, set your bg */
+    z-index: 100;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    
+}
+
+.container{
+    display: flex;
+    flex-direction: column;
+       
+}
+
+.search-bar{
+    display: none;
+    width: 100%;
+    height: auto;
+    padding: 16px;
+    background-color: #ffffff;
+    transform: translateY(-200%);
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 25px 20px -20px;
+}
+
+.search-bar-active{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    animation: searchExpand 0.6s ease-in forwards ;
+
+}
+
+#search-form{
+    display: flex;
+    gap: 16px;
+}
+
+input{
+    border: none;
+box-shadow: rgba(0, 0, 0, 0.15) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;    padding: 8px;
+    width: 450px;
+    height: 3rem;
+    border-radius: 8px;
+    
+}
+
+@keyframes searchExpand {
+    0%{
+        transform: translateY(-200%);
+    }100%{
+        transform: translateY(0%);
+    }
+    
+}
+
+/* Centered title */
+#title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    color: #333;
+    white-space: nowrap;          /* prevent wrapping */
+}
+
+#right-panel{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    gap: 2rem;
+}
+
+/* Left and right container (flex for spacing) */
+#menu,
+#search,
+#profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;                     /* consistent spacing between icons if multiple */
+}
+
+#menu{
+    padding: 0.5rem;
+    border-radius: 8px;
+}
+
+
+#menu:hover{
+    background: #ededed;
+}
+
+
+
+
+/* SVG icons */
+#menu svg,
+#search svg,
+#profile svg {
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    color: #333;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+#menu svg:hover,
+#search svg:hover,
+#profile svg:hover,
+#closeBtn svg:hover{
+    color:red;
+    transform: scale(1.2);         /* subtle hover effect */
+}
+
+.profile-expand{
+    top: 0;
+    right: 0;
+    display: none;
+    position: absolute;
+    z-index: 1000;
+    background-color: #f7f5f5;
+    opacity: 0.6;
+    padding: 32px;
+
+}
+
+.profile-expand-active{
+    padding: 32px;
+    display: flex;
+    animation: profileExpandAnimation 0.5s ease-in forwards;
+}
+
+@keyframes profileExpandAnimation {
+    0%{
+        width: 1vw;
+        height: 1vh;
+    }100%{
+        width: 40vw;
+        height: 100vh;
+    }
+    
+}
+
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    header {
+        padding: 1rem 1.25rem;
+    }
+
+    #title {
+        font-size: 1.25rem;
+    }
+
+    #menu svg,
+    #search svg,
+    #profile svg {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #title {
+        font-size: 1rem;
+    }
+
+    #menu svg,
+    #search svg,
+    #profile svg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+}
+
+.close-searchBtn{
+  
+   height: 2rem;
+  width: 2rem;
+ 
+  text-align: end;
+}
+
+
+.modal{
+  position: absolute;
+  top: 0;
+  left:0;
+  display: none;
+  z-index: 1000;
+  animation: menuAnimation 0.5s ease-in forwards;
+  box-shadow: rgba(0, 0, 0, 0.15) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;    padding: 8px;
+  background: #fff;
+  opacity: 0.6;
+  padding: 32px;
+
+}
+
+.modal-active{
+  display: flex;
+  
+}
+
+.closeBtn-container{
+  display: flex;
+  justify-content: end;
+  width: 100%;
+}
+
+@keyframes menuAnimation {
+ 0%{
+  width: 0vw;
+  height: 0vh;
+ } 100%{
+  width:40vw ;
+  height: 100vh;
+}
+}
+
+
+
+.closeBtn,.profile-close{
+  
+   height: 2rem;
+  width: 2rem;
+ 
+  text-align: end;
+}
+
+.closeBtn:hover{
+  
+  border-radius: 4px;
+  background: rgba(146, 146, 150, 0.2);
+  scale: 1.2;
+  color:red;
+}
