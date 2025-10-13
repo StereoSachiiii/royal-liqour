@@ -1,6 +1,7 @@
 
 import { Overview } from './pages/Overview.js';
 import { Users } from './pages/Users.js';
+import { Products } from './pages/Products.js';
 
 export const render = async (path, mainElement) => {
     if (!mainElement) {
@@ -17,11 +18,11 @@ export const render = async (path, mainElement) => {
             break;
         case 'users':
             mainElement.innerHTML = await Users(); 
-
+            break;
             //new
         case 'products':
-            mainElement.innerHTML = await products();
-
+            mainElement.innerHTML = await Products();
+            break;
 
         default:
             mainElement.innerHTML = Overview(); // Default to overview

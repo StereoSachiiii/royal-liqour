@@ -1,15 +1,18 @@
 <?php 
-class Product{
+class ProductModel{
     private  $id;
     private  $name;
     private  $description;
     private  $price;
     private  $imageUrl;
     private  $categoryId;
+    private $categoryName;
     private  $supplierId;
+    private $supplierName;  
+    private $totalStock;
     private  $isActive;
     private  $createdAt;
-    private  $deletedAt;
+    private  $updatedAt;
     public function __construct(
          $id,
          $name,
@@ -17,10 +20,14 @@ class Product{
          $price,
          $imageUrl,
          $categoryId,
+         $categoryName,
          $supplierId,
+         $supplierName,
          $isActive,
+         $totalStock,
          $createdAt,
-         $deletedAt
+         $updatedAt
+         
     ){
 
         $this->id=$id;
@@ -29,10 +36,14 @@ class Product{
         $this->price = $price;
         $this->imageUrl = $imageUrl;
         $this->categoryId = $categoryId;
+        $this->categoryName=$categoryName;
         $this->supplierId = $supplierId;
+        $this->supplierName = $supplierName;
+        $this->totalStock = $totalStock;
         $this->isActive=$isActive;
         $this->createdAt = $createdAt;
-        $this->deletedAt = $deletedAt;
+        $this->updatedAt = $updatedAt;
+        
 
     }
 
@@ -66,9 +77,7 @@ class Product{
     public function getCreatedAt(){
         return $this->createdAt;
     }
-    public function getDeletedAt(){
-        return $this->deletedAt;
-    }   
+     
     public function setName($name){
         $this->name=$name;
     }
@@ -90,12 +99,36 @@ class Product{
     public function setIsActive($isActive){
         $this->isActive=$isActive;
     }
-    public function setDeletedAt($deletedAt){
-        $this->deletedAt=$deletedAt;
-    }
+   
     public function setCreatedAt($createdAt){
         $this->createdAt=$createdAt;
     }
+    public function toArray():array{
+
+        $product = [
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'price' => $this->price,
+            'image_url' => $this->imageUrl,
+            'category_id' => $this->categoryId,
+            'category_name' => $this->categoryName,
+            'supplier_id' => $this->supplierId,
+            'supplier_name' => $this->supplierName,
+            'is_active' => $this->isActive,
+            'created_at' => $this->createdAt,
+            'updated_at' => $this->updatedAt
+        ];
+        return $product;
+        
+        
+
+
+
+
+
+    }
+
 
 
 }

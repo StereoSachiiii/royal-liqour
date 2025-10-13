@@ -71,3 +71,35 @@
     <p>Design and developed by Stereo (Pvt)</p>
   </div>
 </footer>
+<script>
+let currentSlide = 0;
+const slides = document.querySelectorAll('.slide');
+const dots = document.querySelectorAll('.dot');
+const totalSlides = slides.length;
+
+function showSlide(n) {
+    slides[currentSlide].classList.remove('active');
+    dots[currentSlide].classList.remove('active');
+    
+    currentSlide = (n + totalSlides) % totalSlides;
+    
+    slides[currentSlide].classList.add('active');
+    dots[currentSlide].classList.add('active');
+}
+
+function nextSlide() {
+    showSlide(currentSlide + 1);
+}
+
+// Auto advance slides every 5 seconds
+let slideInterval = setInterval(nextSlide, 5000);
+
+// Dot click handlers
+dots.forEach((dot, index) => {
+    dot.addEventListener('click', () => {
+        clearInterval(slideInterval);
+        showSlide(index);
+        slideInterval = setInterval(nextSlide, 5000);
+    });
+});
+</script>

@@ -3,6 +3,7 @@ Volume serial number is DA73-996F
 C:.
 |   .env
 |   .gitattributes
+|   .gitignore
 |   .htaccess
 |   globals.css
 |   index.php
@@ -11,6 +12,7 @@ C:.
 |   README.md
 |   schema.sql
 |   test.php
+|   testproducts.php
 |   
 +---admin
 |   |   index.php
@@ -104,7 +106,7 @@ C:.
 |   |       Category.php
 |   |       Order.php
 |   |       OrderItem.php
-|   |       Product.php
+|   |       ProductModel.php
 |   |       Stock.php
 |   |       Supplier.php
 |   |       User.php
