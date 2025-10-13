@@ -1,0 +1,234 @@
+/* ================= Body ================= */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+/* breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 14px;
+    color: #666;
+}
+
+.breadcrumb-home {
+    color: #999;
+}
+
+.breadcrumb-separator {
+    color: #ccc;
+}
+
+.breadcrumb-current {
+    color: #333;
+    font-weight: 600;
+}
+
+.sidebar-menu a.active {
+    background-color: #f0f0f0;
+    border-left: 3px solid #007bff;
+    color: #007bff;
+    font-weight: 600;
+}
+/* ================= Sidebar ================= */
+#sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 220px;
+    height: 100vh;
+    background-color: #1f2937;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+#sidebar .sidebar-header {
+    padding: 1.5rem;
+    text-align: center;
+    background-color: #111827;
+    border-bottom: 1px solid #2c2f38;
+}
+
+#sidebar .sidebar-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+#sidebar .sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+}
+
+#sidebar .sidebar-menu li {
+    border-bottom: 1px solid #2c2f38;
+}
+
+#sidebar .sidebar-menu li a {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+#sidebar .sidebar-menu li a:hover,
+#sidebar .sidebar-menu li a.active {
+    background-color: #374151;
+}
+
+/* ================= Header / Navbar ================= */
+#admin-header {
+    position: fixed;
+    top: 0;
+    left: 220px;
+    right: 0;
+    height: 60px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem ;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 900;
+}
+
+#admin-header .header-left h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #111827;
+}
+
+#admin-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+#admin-header .header-right span {
+    font-weight: 500;
+    color: #111827;
+}
+
+.logout-btn {
+    padding: 0.35rem 0.75rem;
+    background-color: #ef4444;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: #b91c1c;
+}
+
+/* ================= Main Content ================= */
+#content {
+    margin-left: 220px;
+    margin-top: 60px;
+    padding: 2rem;
+    transition: margin-left 0.3s ease;
+    height: 100px;
+    
+}
+
+#content h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+#content p {
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+/* ================= Modals ================= */
+#modal-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1100;
+}
+
+.modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 1.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    border-radius: 8px;
+    min-width: 300px;
+    display: none;
+    pointer-events: all;
+}
+
+.modal-active {
+    display: block;
+}
+
+.modal .closeBtn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal .closeBtn svg {
+    width: 100%;
+    height: 100%;
+    stroke: #111827;
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 768px) {
+    #sidebar {
+        width: 180px;
+    }
+
+    #admin-header {
+        left: 180px;
+    }
+
+    #content {
+        margin-left: 180px;
+    }
+}
+
+.dashboard-welcome {
+    padding: 2rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.dashboard-welcome h3 {
+    margin-bottom: 1rem;
+}
+
+.dashboard-welcome p {
+    color: #555;
+}

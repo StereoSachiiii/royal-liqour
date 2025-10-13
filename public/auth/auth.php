@@ -1,3 +1,13 @@
+
+<?php
+require_once __DIR__ . "/../../config/constants.php";
+require_once __DIR__ . "/../../core/session.php";
+
+$session = Session::getInstance();
+$csrfToken = $session->getCsrfInstance()->getToken();
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,7 +44,7 @@
 
                     <div id="message"></div>
 
-                    <form id="loginFormSubmit">
+                    <form id="loginFormSubmit" action="auth-handler.php">
                         <div class="form-group">
                             <label for="loginEmail">Email Address</label>
                             <input type="email" id="loginEmail" name="email" required autocomplete="email">
@@ -47,7 +57,8 @@
                             <span id="loginPassword-error" class="error"></span>
                         </div>
 
-                        <input type="hidden" name="csrf_token" id="loginCsrf" value="">
+                        <input type="hidden" name="csrf_token" id="loginCsrf" value="<?= $csrfToken?>">
+                        <input type="hidden" name="action" value="login">
 
                         <button type="submit" id="loginBtn">Sign In</button>
                     </form>
@@ -62,7 +73,7 @@
 
                     <div id="signupMessage"></div>
 
-                    <form id="signupFormSubmit">
+                    <form id="signupFormSubmit" action="auth-handler.php">
                         <div class="form-group">
                             <label for="name">Full Name</label>
                             <input type="text" id="name" name="name" required minlength="2" maxlength="100" autocomplete="name">
@@ -93,8 +104,8 @@
                             <input type="password" id="confirm_password" name="confirm_password" required minlength="8" maxlength="72" autocomplete="new-password">
                             <span id="confirm_password-error" class="error"></span>
                         </div>
-
-                        <input type="hidden" name="csrf_token" id="signupCsrf" value="">
+                        <input type="hidden" name="action" value="signup">
+                        <input type="hidden" name="csrf_token" id="signupCsrf" value="<?= $csrfToken?>">
 
                         <button type="submit" id="signupBtn">Create Account</button>
                     </form>
@@ -164,12 +175,14 @@
                 return;
             }
             
-            fetch('signup_handler.php', {
+            fetch("<?=AUTH_HANDLER?>", {
                 method: 'POST',
                 body: formData,
                 credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then((response) => {
+                console.log(response);
+               return response.json()})
             .then(data => {
                 const messageDiv = document.getElementById('signupMessage');
                 
@@ -177,9 +190,7 @@
                     messageDiv.innerHTML = '<strong style="color: green;">' + data.message + '</strong>';
                     this.reset();
                     
-                    setTimeout(function() {
-                        window.location.href = data.redirect || '../index.php';
-                    }, 1500);
+                  window.location.href="<?=WELCOME ?>"
                 } else {
                     messageDiv.innerHTML = '<strong style="color: red;">' + data.message + '</strong>';
                     
@@ -265,12 +276,15 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Logging in...';
             
-            fetch('login_handler.php', {
+            fetch('<?=AUTH_HANDLER?>', {
                 method: 'POST',
                 body: formData,
                 credentials: 'same-origin'
             })
-            .then(res => res.json())
+            .then((res) => {
+                
+                console.log(res);
+                return res.json()})
             .then(data => {
                 const messageDiv = document.getElementById('message');
                 
@@ -278,9 +292,7 @@
                     messageDiv.innerHTML = '<strong style="color: green;">' + data.message + '</strong>';
                     document.getElementById('loginFormSubmit').reset();
                     
-                    setTimeout(function() {
-                        window.location.href = data.redirect || '../index.php';
-                    }, 1500);
+                    window.location.href="<?=WELCOME ?>"
                 } else {
                     messageDiv.innerHTML = '<strong style="color: red;">' + data.message + '</strong>';
                 }

@@ -1,224 +1,267 @@
--- ===================================================================
--- COMPLETE LIQUOR E-COMMERCE DATABASE SCHEMA
--- Features: Multi-address support, Views, Stored Procedures, Transactions, 
---           AJAX queries, Soft/Hard deletes, Full CRUD operations
--- Stack: Legacy PHP/HTML/CSS/MySQL
--- ===================================================================
 
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET FOREIGN_KEY_CHECKS = 1;
-SET time_zone = "+00:00";
+CREATE TYPE order_status AS ENUM ('pending', 'processing', 'completed', 'cancelled');
+CREATE TYPE address_type AS ENUM ('billing', 'shipping', 'both');
 
--- ===================================================================
--- USERS TABLE
--- ===================================================================
+
 CREATE TABLE users (
-    id INT(11) NOT NULL AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    email VARCHAR(254) NOT NULL,
+    email VARCHAR(254) NOT NULL UNIQUE,
     phone VARCHAR(15) DEFAULT NULL,
     password_hash VARCHAR(255) NOT NULL,
     profile_image_url VARCHAR(500) DEFAULT NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    is_admin TINYINT(1) NOT NULL DEFAULT 0,
-    is_anonymized TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at DATETIME NULL DEFAULT NULL,
-    anonymized_at DATETIME NULL DEFAULT NULL,
-    last_login_at DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_users_email (email),
-    KEY idx_users_active (is_active, deleted_at),
-    KEY idx_users_login (email, password_hash, is_active)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    is_anonymized BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    anonymized_at TIMESTAMP NULL DEFAULT NULL,
+    last_login_at TIMESTAMP NULL DEFAULT NULL
+);
 
--- ===================================================================
--- USER ADDRESSES TABLE (Multiple addresses per user)
--- ===================================================================
+-- Indexes
+CREATE INDEX idx_users_active ON users(is_active, deleted_at);
+CREATE INDEX idx_users_login ON users(email, password_hash, is_active);
+
+-- Trigger for updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TABLE user_addresses (
-    id INT(11) NOT NULL AUTO_INCREMENT,
-    user_id INT(11) NOT NULL,
-    address_type ENUM('billing','shipping','both') NOT NULL DEFAULT 'both',
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    address_type address_type NOT NULL DEFAULT 'both',
     address_line1 VARCHAR(255) NOT NULL,
     address_line2 VARCHAR(255) DEFAULT NULL,
     city VARCHAR(100) NOT NULL,
     state VARCHAR(100) DEFAULT NULL,
     postal_code VARCHAR(20) NOT NULL,
     country VARCHAR(100) NOT NULL DEFAULT 'Sri Lanka',
-    is_default TINYINT(1) NOT NULL DEFAULT 0,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (id),
-    KEY idx_addresses_user (user_id, is_active),
-    KEY idx_addresses_default (user_id, is_default, address_type),
-    KEY idx_addresses_active (is_active, deleted_at),
-    FOREIGN KEY fk_addresses_user (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    
+    CONSTRAINT fk_addresses_user FOREIGN KEY (user_id) 
+        REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
 
--- ===================================================================
--- SUPPLIERS TABLE
--- ===================================================================
+-- Indexes
+CREATE INDEX idx_addresses_user ON user_addresses(user_id, is_active);
+CREATE INDEX idx_addresses_default ON user_addresses(user_id, is_default, address_type);
+CREATE INDEX idx_addresses_active ON user_addresses(is_active, deleted_at);
+
+-- Trigger for updated_at
+CREATE TRIGGER user_addresses_updated_at
+BEFORE UPDATE ON user_addresses
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TABLE suppliers (
-    id INT(11) NOT NULL AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(254) DEFAULT NULL,
     phone VARCHAR(15) DEFAULT NULL,
     address TEXT DEFAULT NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_suppliers_name (name),
-    KEY idx_suppliers_active (is_active, deleted_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL
+);
 
--- ===================================================================
--- CATEGORIES TABLE
--- ===================================================================
+-- Indexes
+CREATE INDEX idx_suppliers_active ON suppliers(is_active, deleted_at);
+
+-- Trigger for updated_at
+CREATE TRIGGER suppliers_updated_at
+BEFORE UPDATE ON suppliers
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+
 CREATE TABLE categories (
-    id INT(11) NOT NULL AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT DEFAULT NULL,
     image_url VARCHAR(500) DEFAULT NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_categories_name (name),
-    KEY idx_categories_active (is_active, deleted_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL
+);
 
--- ===================================================================
--- WAREHOUSES TABLE
--- ===================================================================
+-- Indexes
+CREATE INDEX idx_categories_active ON categories(is_active, deleted_at);
+
+-- Trigger for updated_at
+CREATE TRIGGER categories_updated_at
+BEFORE UPDATE ON categories
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+
 CREATE TABLE warehouses (
-    id INT(11) NOT NULL AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
     address TEXT DEFAULT NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_warehouses_name (name),
-    KEY idx_warehouses_active (is_active, deleted_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL
+);
 
--- ===================================================================
--- PRODUCTS TABLE
--- ===================================================================
+-- Indexes
+CREATE INDEX idx_warehouses_active ON warehouses(is_active, deleted_at);
+
+-- Trigger for updated_at
+CREATE TRIGGER warehouses_updated_at
+BEFORE UPDATE ON warehouses
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TABLE products (
-    id INT(11) NOT NULL AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
     description TEXT DEFAULT NULL,
     price DECIMAL(12,2) NOT NULL CHECK (price > 0),
     image_url VARCHAR(500) DEFAULT NULL,
-    category_id INT(11) NOT NULL,
-    supplier_id INT(11) DEFAULT NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (id),
-    KEY idx_products_active (is_active, deleted_at),
-    KEY idx_products_category (category_id, is_active),
-    KEY idx_products_supplier (supplier_id),
-    KEY idx_products_price (price, is_active),
-    KEY idx_products_name (name, is_active),
-    FOREIGN KEY fk_products_category (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY fk_products_supplier (supplier_id) REFERENCES suppliers(id) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    category_id INTEGER NOT NULL,
+    supplier_id INTEGER DEFAULT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    
+    CONSTRAINT fk_products_category FOREIGN KEY (category_id) 
+        REFERENCES categories(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_products_supplier FOREIGN KEY (supplier_id) 
+        REFERENCES suppliers(id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
 
--- STOCK TABLE
+-- Indexes
+CREATE INDEX idx_products_active ON products(is_active, deleted_at);
+CREATE INDEX idx_products_category ON products(category_id, is_active);
+CREATE INDEX idx_products_supplier ON products(supplier_id);
+CREATE INDEX idx_products_price ON products(price, is_active);
+CREATE INDEX idx_products_name ON products(name, is_active);
+
+-- Trigger for updated_at
+CREATE TRIGGER products_updated_at
+BEFORE UPDATE ON products
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TABLE stock (
-    id INT(11) NOT NULL AUTO_INCREMENT,
-    product_id INT(11) NOT NULL,
-    warehouse_id INT(11) NOT NULL,
-    quantity INT(11) NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_stock_product_warehouse (product_id, warehouse_id),
-    KEY idx_stock_product (product_id, is_active),
-    KEY idx_stock_warehouse (warehouse_id, is_active),
-    KEY idx_stock_quantity (quantity, is_active),
-    FOREIGN KEY fk_stock_product (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY fk_stock_warehouse (warehouse_id) REFERENCES warehouses(id) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    warehouse_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT uk_stock_product_warehouse UNIQUE (product_id, warehouse_id),
+    CONSTRAINT fk_stock_product FOREIGN KEY (product_id) 
+        REFERENCES products(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_stock_warehouse FOREIGN KEY (warehouse_id) 
+        REFERENCES warehouses(id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
 
--- ===================================================================
--- ORDERS TABLE
--- ===================================================================
+-- Indexes
+CREATE INDEX idx_stock_product ON stock(product_id, is_active);
+CREATE INDEX idx_stock_warehouse ON stock(warehouse_id, is_active);
+CREATE INDEX idx_stock_quantity ON stock(quantity, is_active);
+
+-- Trigger for updated_at
+CREATE TRIGGER stock_updated_at
+BEFORE UPDATE ON stock
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TABLE orders (
-    id INT(11) NOT NULL AUTO_INCREMENT,
-    user_id INT(11) NOT NULL,
-    shipping_address_id INT(11) DEFAULT NULL,
-    billing_address_id INT(11) DEFAULT NULL,
-    status ENUM('pending','processing','completed','cancelled') NOT NULL DEFAULT 'pending',
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    shipping_address_id INTEGER DEFAULT NULL,
+    billing_address_id INTEGER DEFAULT NULL,
+    status order_status NOT NULL DEFAULT 'pending',
     total DECIMAL(12,2) NOT NULL CHECK (total >= 0),
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    is_anonymized TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at DATETIME NULL DEFAULT NULL,
-    anonymized_at DATETIME NULL DEFAULT NULL,
-    PRIMARY KEY (id),
-    KEY idx_orders_user (user_id, created_at),
-    KEY idx_orders_status (status, created_at),
-    KEY idx_orders_active (is_active, deleted_at),
-    KEY idx_orders_shipping (shipping_address_id),
-    KEY idx_orders_billing (billing_address_id),
-    FOREIGN KEY fk_orders_user (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY fk_orders_shipping (shipping_address_id) REFERENCES user_addresses(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY fk_orders_billing (billing_address_id) REFERENCES user_addresses(id) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_anonymized BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    anonymized_at TIMESTAMP NULL DEFAULT NULL,
+    
+    CONSTRAINT fk_orders_user FOREIGN KEY (user_id) 
+        REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_orders_shipping FOREIGN KEY (shipping_address_id) 
+        REFERENCES user_addresses(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_orders_billing FOREIGN KEY (billing_address_id) 
+        REFERENCES user_addresses(id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
 
--- ===================================================================
--- ORDER ITEMS TABLE
--- ===================================================================
+-- Indexes
+CREATE INDEX idx_orders_user ON orders(user_id, created_at);
+CREATE INDEX idx_orders_status ON orders(status, created_at);
+CREATE INDEX idx_orders_active ON orders(is_active, deleted_at);
+CREATE INDEX idx_orders_shipping ON orders(shipping_address_id);
+CREATE INDEX idx_orders_billing ON orders(billing_address_id);
+
+-- Trigger for updated_at
+CREATE TRIGGER orders_updated_at
+BEFORE UPDATE ON orders
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TABLE order_items (
-    id INT(11) NOT NULL AUTO_INCREMENT,
-    order_id INT(11) NOT NULL,
-    product_id INT(11) NOT NULL,
-    quantity INT(11) NOT NULL CHECK (quantity > 0),
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
     price DECIMAL(12,2) NOT NULL CHECK (price > 0),
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_order_items (order_id, product_id),
-    KEY idx_order_items_order (order_id),
-    KEY idx_order_items_product (product_id),
-    FOREIGN KEY fk_order_items_order (order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY fk_order_items_product (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT uk_order_items UNIQUE (order_id, product_id),
+    CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) 
+        REFERENCES orders(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_order_items_product FOREIGN KEY (product_id) 
+        REFERENCES products(id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
 
+-- Indexes
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_product ON order_items(product_id);
 
-
-
-
-
-
-
-
+-- Trigger for updated_at
+CREATE TRIGGER order_items_updated_at
+BEFORE UPDATE ON order_items
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TABLE rate_limiting (
-       id INT(11) AUTO_INCREMENT PRIMARY KEY,
-       identifier VARCHAR(255) NOT NULL,
-       attempt_time DATETIME NOT NULL,
-       KEY idx_identifier_time (identifier, attempt_time)
-   );
--- ===================================================================
--- VIEWS FOR AJAX QUERIES
--- ===================================================================
+    id SERIAL PRIMARY KEY,
+    identifier VARCHAR(255) NOT NULL,
+    attempt_time TIMESTAMP NOT NULL
+);
 
--- Active Products with Category and Stock Info (AJAX Ready)
+CREATE INDEX idx_identifier_time ON rate_limiting(identifier, attempt_time);
+
+
+-- Active Products with Category and Stock Info
 CREATE OR REPLACE VIEW vw_active_products AS
 SELECT 
     p.id,
@@ -237,16 +280,16 @@ SELECT
 FROM products p
 LEFT JOIN categories c ON p.category_id = c.id
 LEFT JOIN suppliers s ON p.supplier_id = s.id
-LEFT JOIN stock st ON p.id = st.product_id AND st.is_active = 1
+LEFT JOIN stock st ON p.id = st.product_id AND st.is_active = TRUE
 WHERE p.deleted_at IS NULL 
-    AND p.is_active = 1
+    AND p.is_active = TRUE
     AND c.deleted_at IS NULL
-    AND c.is_active = 1
+    AND c.is_active = TRUE
 GROUP BY p.id, p.name, p.description, p.price, p.image_url, 
          p.category_id, c.name, p.supplier_id, s.name, 
          p.is_active, p.created_at, p.updated_at;
 
--- Products Search View (for AJAX autocomplete)
+-- Products Search View
 CREATE OR REPLACE VIEW vw_products_search AS
 SELECT 
     p.id,
@@ -257,11 +300,11 @@ SELECT
     p.image_url
 FROM products p
 LEFT JOIN categories c ON p.category_id = c.id
-LEFT JOIN stock st ON p.id = st.product_id AND st.is_active = 1
+LEFT JOIN stock st ON p.id = st.product_id AND st.is_active = TRUE
 WHERE p.deleted_at IS NULL 
-    AND p.is_active = 1
+    AND p.is_active = TRUE
     AND c.deleted_at IS NULL
-    AND c.is_active = 1
+    AND c.is_active = TRUE
 GROUP BY p.id, p.name, c.name, p.price, p.image_url;
 
 -- User Orders Summary View
@@ -281,7 +324,7 @@ JOIN users u ON o.user_id = u.id
 LEFT JOIN order_items oi ON o.id = oi.order_id
 LEFT JOIN user_addresses sa ON o.shipping_address_id = sa.id
 WHERE o.deleted_at IS NULL 
-    AND o.is_active = 1
+    AND o.is_active = TRUE
     AND u.deleted_at IS NULL
 GROUP BY o.id, o.user_id, u.name, u.email, o.status, 
          o.total, o.created_at, sa.address_line1, sa.city, sa.postal_code;
@@ -308,7 +351,7 @@ JOIN users u ON o.user_id = u.id
 JOIN order_items oi ON o.id = oi.order_id
 JOIN products p ON oi.product_id = p.id
 WHERE o.deleted_at IS NULL 
-    AND o.is_active = 1
+    AND o.is_active = TRUE
     AND u.deleted_at IS NULL
     AND p.deleted_at IS NULL;
 
@@ -326,9 +369,9 @@ SELECT
 FROM categories c
 LEFT JOIN products p ON c.id = p.category_id 
     AND p.deleted_at IS NULL 
-    AND p.is_active = 1
+    AND p.is_active = TRUE
 WHERE c.deleted_at IS NULL 
-    AND c.is_active = 1
+    AND c.is_active = TRUE
 GROUP BY c.id, c.name, c.description, c.image_url;
 
 -- Low Stock Alert View
@@ -345,11 +388,11 @@ JOIN products p ON st.product_id = p.id
 JOIN categories c ON p.category_id = c.id
 JOIN warehouses w ON st.warehouse_id = w.id
 WHERE st.quantity < 10
-    AND st.is_active = 1
+    AND st.is_active = TRUE
     AND p.deleted_at IS NULL 
-    AND p.is_active = 1
+    AND p.is_active = TRUE
     AND w.deleted_at IS NULL
-    AND w.is_active = 1
+    AND w.is_active = TRUE
 ORDER BY st.quantity ASC;
 
 -- User Addresses View
@@ -374,61 +417,40 @@ JOIN users u ON ua.user_id = u.id
 WHERE ua.deleted_at IS NULL
     AND u.deleted_at IS NULL;
 
--- ===================================================================
--- STORED PROCEDURES
--- ===================================================================
-
-DELIMITER $$
-
--- ===================================================================
--- PRODUCT PROCEDURES
--- ===================================================================
 
 -- Create Product with Transaction
-CREATE PROCEDURE sp_create_product(
-    IN p_name VARCHAR(200),
-    IN p_description TEXT,
-    IN p_price DECIMAL(12,2),
-    IN p_image_url VARCHAR(500),
-    IN p_category_id INT,
-    IN p_supplier_id INT
-)
+CREATE OR REPLACE FUNCTION sp_create_product(
+    p_name VARCHAR(200),
+    p_description TEXT,
+    p_price DECIMAL(12,2),
+    p_image_url VARCHAR(500),
+    p_category_id INTEGER,
+    p_supplier_id INTEGER
+) RETURNS TABLE(product_id INTEGER) AS $$
+DECLARE
+    v_product_id INTEGER;
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     INSERT INTO products (name, description, price, image_url, category_id, supplier_id)
-    VALUES (p_name, p_description, p_price, p_image_url, p_category_id, p_supplier_id);
+    VALUES (p_name, p_description, p_price, p_image_url, p_category_id, p_supplier_id)
+    RETURNING id INTO v_product_id;
     
-    COMMIT;
-    
-    SELECT LAST_INSERT_ID() AS product_id;
-END$$
+    RETURN QUERY SELECT v_product_id;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Update Product
-CREATE PROCEDURE sp_update_product(
-    IN p_id INT,
-    IN p_name VARCHAR(200),
-    IN p_description TEXT,
-    IN p_price DECIMAL(12,2),
-    IN p_image_url VARCHAR(500),
-    IN p_category_id INT,
-    IN p_supplier_id INT
-)
+CREATE OR REPLACE FUNCTION sp_update_product(
+    p_id INTEGER,
+    p_name VARCHAR(200),
+    p_description TEXT,
+    p_price DECIMAL(12,2),
+    p_image_url VARCHAR(500),
+    p_category_id INTEGER,
+    p_supplier_id INTEGER
+) RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     UPDATE products 
     SET name = p_name,
         description = p_description,
@@ -439,34 +461,34 @@ BEGIN
     WHERE id = p_id 
         AND deleted_at IS NULL;
     
-    COMMIT;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Soft Delete Product
-CREATE PROCEDURE sp_soft_delete_product(IN p_id INT)
+CREATE OR REPLACE FUNCTION sp_soft_delete_product(p_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE products 
     SET deleted_at = CURRENT_TIMESTAMP,
-        is_active = 0
+        is_active = FALSE
     WHERE id = p_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Hard Delete Product (Permanent)
-CREATE PROCEDURE sp_hard_delete_product(IN p_id INT)
+CREATE OR REPLACE FUNCTION sp_hard_delete_product(p_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     -- Delete related order items first
     DELETE FROM order_items WHERE product_id = p_id;
     
@@ -476,408 +498,289 @@ BEGIN
     -- Finally delete product
     DELETE FROM products WHERE id = p_id;
     
-    COMMIT;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Restore Soft Deleted Product
-CREATE PROCEDURE sp_restore_product(IN p_id INT)
+CREATE OR REPLACE FUNCTION sp_restore_product(p_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE products 
     SET deleted_at = NULL,
-        is_active = 1
+        is_active = TRUE
     WHERE id = p_id 
         AND deleted_at IS NOT NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Search Products (AJAX Ready)
-CREATE PROCEDURE sp_search_products(
-    IN p_search_term VARCHAR(200),
-    IN p_category_id INT,
-    IN p_min_price DECIMAL(12,2),
-    IN p_max_price DECIMAL(12,2),
-    IN p_sort_by VARCHAR(20),
-    IN p_sort_order VARCHAR(4),
-    IN p_limit INT,
-    IN p_offset INT
-)
+CREATE OR REPLACE FUNCTION sp_search_products(
+    p_search_term VARCHAR(200) DEFAULT NULL,
+    p_category_id INTEGER DEFAULT NULL,
+    p_min_price DECIMAL(12,2) DEFAULT NULL,
+    p_max_price DECIMAL(12,2) DEFAULT NULL,
+    p_limit INTEGER DEFAULT 50,
+    p_offset INTEGER DEFAULT 0
+) RETURNS TABLE(
+    id INTEGER,
+    name VARCHAR(200),
+    description TEXT,
+    price DECIMAL(12,2),
+    image_url VARCHAR(500),
+    category_id INTEGER,
+    category_name VARCHAR(100),
+    supplier_id INTEGER,
+    supplier_name VARCHAR(100),
+    total_stock BIGINT,
+    is_active BOOLEAN,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+) AS $$
 BEGIN
-    SET @sql = 'SELECT * FROM vw_active_products WHERE 1=1';
-    
-    IF p_search_term IS NOT NULL AND p_search_term != '' THEN
-        SET @sql = CONCAT(@sql, ' AND (name LIKE "%', p_search_term, '%" OR description LIKE "%', p_search_term, '%")');
-    END IF;
-    
-    IF p_category_id IS NOT NULL AND p_category_id > 0 THEN
-        SET @sql = CONCAT(@sql, ' AND category_id = ', p_category_id);
-    END IF;
-    
-    IF p_min_price IS NOT NULL AND p_min_price > 0 THEN
-        SET @sql = CONCAT(@sql, ' AND price >= ', p_min_price);
-    END IF;
-    
-    IF p_max_price IS NOT NULL AND p_max_price > 0 THEN
-        SET @sql = CONCAT(@sql, ' AND price <= ', p_max_price);
-    END IF;
-    
-    SET @sort_column = COALESCE(p_sort_by, 'created_at');
-    SET @sort_direction = COALESCE(p_sort_order, 'DESC');
-    
-    SET @sql = CONCAT(@sql, ' ORDER BY ', @sort_column, ' ', @sort_direction);
-    
-    IF p_limit IS NOT NULL AND p_limit > 0 THEN
-        SET @sql = CONCAT(@sql, ' LIMIT ', p_limit);
-        
-        IF p_offset IS NOT NULL AND p_offset >= 0 THEN
-            SET @sql = CONCAT(@sql, ' OFFSET ', p_offset);
-        END IF;
-    END IF;
-    
-    PREPARE stmt FROM @sql;
-    EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
-END$$
+    RETURN QUERY
+    SELECT 
+        p.id,
+        p.name,
+        p.description,
+        p.price,
+        p.image_url,
+        p.category_id,
+        p.category_name,
+        p.supplier_id,
+        p.supplier_name,
+        p.total_stock,
+        p.is_active,
+        p.created_at,
+        p.updated_at
+    FROM vw_active_products p
+    WHERE (p_search_term IS NULL OR 
+           p.name ILIKE '%' || p_search_term || '%' OR 
+           p.description ILIKE '%' || p_search_term || '%')
+      AND (p_category_id IS NULL OR p.category_id = p_category_id)
+      AND (p_min_price IS NULL OR p.price >= p_min_price)
+      AND (p_max_price IS NULL OR p.price <= p_max_price)
+    ORDER BY p.created_at DESC
+    LIMIT p_limit OFFSET p_offset;
+END;
+$$ LANGUAGE plpgsql;
 
--- Get Products by Price Range (AJAX Filter)
-CREATE PROCEDURE sp_filter_products_by_price(
-    IN p_min_price DECIMAL(12,2),
-    IN p_max_price DECIMAL(12,2)
-)
-BEGIN
-    SELECT * FROM vw_active_products
-    WHERE price BETWEEN p_min_price AND p_max_price
-    ORDER BY price ASC;
-END$$
-
--- Get Products A-Z (AJAX Filter)
-CREATE PROCEDURE sp_filter_products_alphabetical(
-    IN p_order VARCHAR(4)
-)
-BEGIN
-    IF p_order = 'DESC' THEN
-        SELECT * FROM vw_active_products ORDER BY name DESC;
-    ELSE
-        SELECT * FROM vw_active_products ORDER BY name ASC;
-    END IF;
-END$$
-
--- ===================================================================
--- ORDER PROCEDURES
--- ===================================================================
 
 -- Create Order with Items (Transaction)
-CREATE PROCEDURE sp_create_order(
-    IN p_user_id INT,
-    IN p_shipping_address_id INT,
-    IN p_billing_address_id INT,
-    IN p_items JSON
-)
+CREATE OR REPLACE FUNCTION sp_create_order(
+    p_user_id INTEGER,
+    p_shipping_address_id INTEGER,
+    p_billing_address_id INTEGER,
+    p_items JSONB
+) RETURNS TABLE(order_id INTEGER, total DECIMAL(12,2)) AS $$
+DECLARE
+    v_order_id INTEGER;
+    v_total DECIMAL(12,2) := 0;
+    v_item JSONB;
+    v_product_id INTEGER;
+    v_quantity INTEGER;
+    v_price DECIMAL(12,2);
 BEGIN
-    DECLARE v_order_id INT;
-    DECLARE v_total DECIMAL(12,2) DEFAULT 0;
-    DECLARE v_product_id INT;
-    DECLARE v_quantity INT;
-    DECLARE v_price DECIMAL(12,2);
-    DECLARE v_idx INT DEFAULT 0;
-    DECLARE v_count INT;
-    
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     -- Create order
     INSERT INTO orders (user_id, shipping_address_id, billing_address_id, total)
-    VALUES (p_user_id, p_shipping_address_id, p_billing_address_id, 0);
+    VALUES (p_user_id, p_shipping_address_id, p_billing_address_id, 0)
+    RETURNING id INTO v_order_id;
     
-    SET v_order_id = LAST_INSERT_ID();
-    SET v_count = JSON_LENGTH(p_items);
-    
-    -- Insert order items
-    WHILE v_idx < v_count DO
-        SET v_product_id = JSON_UNQUOTE(JSON_EXTRACT(p_items, CONCAT('$[', v_idx, '].product_id')));
-        SET v_quantity = JSON_UNQUOTE(JSON_EXTRACT(p_items, CONCAT('$[', v_idx, '].quantity')));
+    -- Loop through JSON items
+    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+    LOOP
+        v_product_id := (v_item->>'product_id')::INTEGER;
+        v_quantity := (v_item->>'quantity')::INTEGER;
         
         -- Get current product price
-        SELECT price INTO v_price FROM products WHERE id = v_product_id AND deleted_at IS NULL;
+        SELECT price INTO v_price FROM products 
+        WHERE id = v_product_id AND deleted_at IS NULL;
         
+        -- Insert order item
         INSERT INTO order_items (order_id, product_id, quantity, price)
         VALUES (v_order_id, v_product_id, v_quantity, v_price);
         
-        SET v_total = v_total + (v_price * v_quantity);
-        SET v_idx = v_idx + 1;
-    END WHILE;
+        -- Add to total
+        v_total := v_total + (v_price * v_quantity);
+    END LOOP;
     
     -- Update order total
     UPDATE orders SET total = v_total WHERE id = v_order_id;
     
-    COMMIT;
-    
-    SELECT v_order_id AS order_id, v_total AS total;
-END$$
+    RETURN QUERY SELECT v_order_id, v_total;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Update Order Status
-CREATE PROCEDURE sp_update_order_status(
-    IN p_order_id INT,
-    IN p_status ENUM('pending','processing','completed','cancelled')
-)
+CREATE OR REPLACE FUNCTION sp_update_order_status(
+    p_order_id INTEGER,
+    p_status order_status
+) RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE orders 
     SET status = p_status
     WHERE id = p_order_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Soft Delete Order
-CREATE PROCEDURE sp_soft_delete_order(IN p_order_id INT)
+CREATE OR REPLACE FUNCTION sp_soft_delete_order(p_order_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE orders 
     SET deleted_at = CURRENT_TIMESTAMP,
-        is_active = 0
+        is_active = FALSE
     WHERE id = p_order_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
-
--- Hard Delete Order
-CREATE PROCEDURE sp_hard_delete_order(IN p_order_id INT)
-BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
-    -- Delete order items
-    DELETE FROM order_items WHERE order_id = p_order_id;
-    
-    -- Delete order
-    DELETE FROM orders WHERE id = p_order_id;
-    
-    COMMIT;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Get User Orders (AJAX Ready)
-CREATE PROCEDURE sp_get_user_orders(
-    IN p_user_id INT,
-    IN p_status VARCHAR(20),
-    IN p_limit INT,
-    IN p_offset INT
-)
+CREATE OR REPLACE FUNCTION sp_get_user_orders(
+    p_user_id INTEGER,
+    p_status order_status DEFAULT NULL,
+    p_limit INTEGER DEFAULT 50,
+    p_offset INTEGER DEFAULT 0
+) RETURNS TABLE(
+    order_id INTEGER,
+    user_id INTEGER,
+    user_name VARCHAR(100),
+    user_email VARCHAR(254),
+    status order_status,
+    total DECIMAL(12,2),
+    order_date TIMESTAMP,
+    item_count BIGINT,
+    shipping_address TEXT
+) AS $$
 BEGIN
-    IF p_status IS NOT NULL AND p_status != '' THEN
-        SELECT * FROM vw_user_orders
-        WHERE user_id = p_user_id 
-            AND status = p_status
-        ORDER BY order_date DESC
+    IF p_status IS NOT NULL THEN
+        RETURN QUERY
+        SELECT 
+            o.order_id,
+            o.user_id,
+            o.user_name,
+            o.user_email,
+            o.status,
+            o.total,
+            o.order_date,
+            o.item_count,
+            o.shipping_address
+        FROM vw_user_orders o
+        WHERE o.user_id = p_user_id 
+            AND o.status = p_status
+        ORDER BY o.order_date DESC
         LIMIT p_limit OFFSET p_offset;
     ELSE
-        SELECT * FROM vw_user_orders
-        WHERE user_id = p_user_id
-        ORDER BY order_date DESC
+        RETURN QUERY
+        SELECT 
+            o.order_id,
+            o.user_id,
+            o.user_name,
+            o.user_email,
+            o.status,
+            o.total,
+            o.order_date,
+            o.item_count,
+            o.shipping_address
+        FROM vw_user_orders o
+        WHERE o.user_id = p_user_id
+        ORDER BY o.order_date DESC
         LIMIT p_limit OFFSET p_offset;
     END IF;
-END$$
+END;
+$$ LANGUAGE plpgsql;
 
--- ===================================================================
--- STOCK PROCEDURES
--- ===================================================================
-
--- Update Stock (Transaction)
-CREATE PROCEDURE sp_update_stock(
-    IN p_product_id INT,
-    IN p_warehouse_id INT,
-    IN p_quantity INT
-)
+-- Update Stock (with Upsert)
+CREATE OR REPLACE FUNCTION sp_update_stock(
+    p_product_id INTEGER,
+    p_warehouse_id INTEGER,
+    p_quantity INTEGER
+) RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     INSERT INTO stock (product_id, warehouse_id, quantity)
     VALUES (p_product_id, p_warehouse_id, p_quantity)
-    ON DUPLICATE KEY UPDATE 
+    ON CONFLICT (product_id, warehouse_id) 
+    DO UPDATE SET 
         quantity = p_quantity,
         updated_at = CURRENT_TIMESTAMP;
     
-    COMMIT;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Adjust Stock (Add/Subtract)
-CREATE PROCEDURE sp_adjust_stock(
-    IN p_product_id INT,
-    IN p_warehouse_id INT,
-    IN p_adjustment INT
-)
+CREATE OR REPLACE FUNCTION sp_adjust_stock(
+    p_product_id INTEGER,
+    p_warehouse_id INTEGER,
+    p_adjustment INTEGER
+) RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     UPDATE stock 
     SET quantity = quantity + p_adjustment
     WHERE product_id = p_product_id 
         AND warehouse_id = p_warehouse_id
-        AND is_active = 1;
+        AND is_active = TRUE;
     
-    COMMIT;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
--- Get Stock by Product
-CREATE PROCEDURE sp_get_product_stock(IN p_product_id INT)
-BEGIN
-    SELECT 
-        s.id,
-        s.product_id,
-        p.name AS product_name,
-        s.warehouse_id,
-        w.name AS warehouse_name,
-        s.quantity,
-        s.updated_at
-    FROM stock s
-    JOIN products p ON s.product_id = p.id
-    JOIN warehouses w ON s.warehouse_id = w.id
-    WHERE s.product_id = p_product_id 
-        AND s.is_active = 1
-        AND p.deleted_at IS NULL
-        AND w.deleted_at IS NULL;
-END$$
-
--- ===================================================================
--- USER PROCEDURES
--- ===================================================================
 
 -- Create User
-CREATE PROCEDURE sp_create_user(
-    IN p_name VARCHAR(100),
-    IN p_email VARCHAR(254),
-    IN p_phone VARCHAR(15),
-    IN p_password_hash VARCHAR(255)
-)
+CREATE OR REPLACE FUNCTION sp_create_user(
+    p_name VARCHAR(100),
+    p_email VARCHAR(254),
+    p_phone VARCHAR(15),
+    p_password_hash VARCHAR(255)
+) RETURNS TABLE(user_id INTEGER) AS $$
+DECLARE
+    v_user_id INTEGER;
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     INSERT INTO users (name, email, phone, password_hash)
-    VALUES (p_name, p_email, p_phone, p_password_hash);
+    VALUES (p_name, p_email, p_phone, p_password_hash)
+    RETURNING id INTO v_user_id;
     
-    COMMIT;
-    
-    SELECT LAST_INSERT_ID() AS user_id;
-END$$
-
--- Update User
-CREATE PROCEDURE sp_update_user(
-    IN p_user_id INT,
-    IN p_name VARCHAR(100),
-    IN p_email VARCHAR(254),
-    IN p_phone VARCHAR(15),
-    IN p_profile_image_url VARCHAR(500)
-)
-BEGIN
-    UPDATE users 
-    SET name = p_name,
-        email = p_email,
-        phone = p_phone,
-        profile_image_url = p_profile_image_url
-    WHERE id = p_user_id 
-        AND deleted_at IS NULL;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$$
-
--- Soft Delete User
-CREATE PROCEDURE sp_soft_delete_user(IN p_user_id INT)
-BEGIN
-    UPDATE users 
-    SET deleted_at = CURRENT_TIMESTAMP,
-        is_active = 0
-    WHERE id = p_user_id 
-        AND deleted_at IS NULL;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
-
--- Hard Delete User (Anonymize first recommended)
-CREATE PROCEDURE sp_hard_delete_user(IN p_user_id INT)
-BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
-    -- Delete user addresses
-    DELETE FROM user_addresses WHERE user_id = p_user_id;
-    
-    -- Delete order items related to user orders
-    DELETE oi FROM order_items oi
-    INNER JOIN orders o ON oi.order_id = o.id
-    WHERE o.user_id = p_user_id;
-    
-    -- Delete orders
-    DELETE FROM orders WHERE user_id = p_user_id;
-    
-    -- Finally delete user
-    DELETE FROM users WHERE id = p_user_id;
-    
-    COMMIT;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    RETURN QUERY SELECT v_user_id;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Anonymize User (GDPR Compliance)
-CREATE PROCEDURE sp_anonymize_user(IN p_user_id INT)
+CREATE OR REPLACE FUNCTION sp_anonymize_user(p_user_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     UPDATE users 
-    SET name = CONCAT('Deleted User ', id),
-        email = CONCAT('deleted_', id, '@anonymized.local'),
+    SET name = 'Deleted User ' || id::TEXT,
+        email = 'deleted_' || id::TEXT || '@anonymized.local',
         phone = NULL,
-        address = NULL,
         profile_image_url = NULL,
-        is_anonymized = 1,
+        is_anonymized = TRUE,
         anonymized_at = CURRENT_TIMESTAMP,
-        is_active = 0
+        is_active = FALSE
     WHERE id = p_user_id;
     
     -- Anonymize addresses
@@ -887,60 +790,40 @@ BEGIN
         city = 'Anonymized',
         state = NULL,
         postal_code = '00000',
-        is_active = 0
+        is_active = FALSE
     WHERE user_id = p_user_id;
     
     -- Mark orders as anonymized
     UPDATE orders
-    SET is_anonymized = 1,
+    SET is_anonymized = TRUE,
         anonymized_at = CURRENT_TIMESTAMP
     WHERE user_id = p_user_id;
     
-    COMMIT;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
--- Update Last Login
-CREATE PROCEDURE sp_update_last_login(IN p_user_id INT)
-BEGIN
-    UPDATE users 
-    SET last_login_at = CURRENT_TIMESTAMP
-    WHERE id = p_user_id 
-        AND deleted_at IS NULL;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
-
--- ===================================================================
--- USER ADDRESS PROCEDURES
--- ===================================================================
 
 -- Create User Address
-CREATE PROCEDURE sp_create_address(
-    IN p_user_id INT,
-    IN p_address_type ENUM('billing','shipping','both'),
-    IN p_address_line1 VARCHAR(255),
-    IN p_address_line2 VARCHAR(255),
-    IN p_city VARCHAR(100),
-    IN p_state VARCHAR(100),
-    IN p_postal_code VARCHAR(20),
-    IN p_country VARCHAR(100),
-    IN p_is_default TINYINT(1)
-)
+CREATE OR REPLACE FUNCTION sp_create_address(
+    p_user_id INTEGER,
+    p_address_type address_type,
+    p_address_line1 VARCHAR(255),
+    p_address_line2 VARCHAR(255),
+    p_city VARCHAR(100),
+    p_state VARCHAR(100),
+    p_postal_code VARCHAR(20),
+    p_country VARCHAR(100),
+    p_is_default BOOLEAN
+) RETURNS TABLE(address_id INTEGER) AS $$
+DECLARE
+    v_address_id INTEGER;
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     -- If this is default, unset other defaults
-    IF p_is_default = 1 THEN
+    IF p_is_default = TRUE THEN
         UPDATE user_addresses 
-        SET is_default = 0 
+        SET is_default = FALSE 
         WHERE user_id = p_user_id 
             AND address_type = p_address_type
             AND deleted_at IS NULL;
@@ -953,43 +836,36 @@ BEGIN
     VALUES (
         p_user_id, p_address_type, p_address_line1, p_address_line2,
         p_city, p_state, p_postal_code, p_country, p_is_default
-    );
+    )
+    RETURNING id INTO v_address_id;
     
-    COMMIT;
-    
-    SELECT LAST_INSERT_ID() AS address_id;
-END$
+    RETURN QUERY SELECT v_address_id;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Update User Address
-CREATE PROCEDURE sp_update_address(
-    IN p_address_id INT,
-    IN p_address_type ENUM('billing','shipping','both'),
-    IN p_address_line1 VARCHAR(255),
-    IN p_address_line2 VARCHAR(255),
-    IN p_city VARCHAR(100),
-    IN p_state VARCHAR(100),
-    IN p_postal_code VARCHAR(20),
-    IN p_country VARCHAR(100),
-    IN p_is_default TINYINT(1)
-)
+CREATE OR REPLACE FUNCTION sp_update_address(
+    p_address_id INTEGER,
+    p_address_type address_type,
+    p_address_line1 VARCHAR(255),
+    p_address_line2 VARCHAR(255),
+    p_city VARCHAR(100),
+    p_state VARCHAR(100),
+    p_postal_code VARCHAR(20),
+    p_country VARCHAR(100),
+    p_is_default BOOLEAN
+) RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_user_id INTEGER;
+    v_affected INTEGER;
 BEGIN
-    DECLARE v_user_id INT;
-    
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
     -- Get user_id for this address
     SELECT user_id INTO v_user_id FROM user_addresses WHERE id = p_address_id;
     
     -- If setting as default, unset other defaults
-    IF p_is_default = 1 THEN
+    IF p_is_default = TRUE THEN
         UPDATE user_addresses 
-        SET is_default = 0 
+        SET is_default = FALSE 
         WHERE user_id = v_user_id 
             AND address_type = p_address_type
             AND id != p_address_id
@@ -1008,73 +884,106 @@ BEGIN
     WHERE id = p_address_id 
         AND deleted_at IS NULL;
     
-    COMMIT;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Soft Delete Address
-CREATE PROCEDURE sp_soft_delete_address(IN p_address_id INT)
+CREATE OR REPLACE FUNCTION sp_soft_delete_address(p_address_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE user_addresses 
     SET deleted_at = CURRENT_TIMESTAMP,
-        is_active = 0
+        is_active = FALSE
     WHERE id = p_address_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$
-
--- Hard Delete Address
-CREATE PROCEDURE sp_hard_delete_address(IN p_address_id INT)
-BEGIN
-    DELETE FROM user_addresses WHERE id = p_address_id;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Get User Addresses
-CREATE PROCEDURE sp_get_user_addresses(
-    IN p_user_id INT,
-    IN p_address_type VARCHAR(20)
-)
+CREATE OR REPLACE FUNCTION sp_get_user_addresses(
+    p_user_id INTEGER,
+    p_address_type address_type DEFAULT NULL
+) RETURNS TABLE(
+    id INTEGER,
+    user_id INTEGER,
+    user_name VARCHAR(100),
+    user_email VARCHAR(254),
+    address_type address_type,
+    full_address TEXT,
+    is_default BOOLEAN,
+    is_active BOOLEAN,
+    created_at TIMESTAMP
+) AS $$
 BEGIN
-    IF p_address_type IS NOT NULL AND p_address_type != '' THEN
-        SELECT * FROM vw_user_addresses
-        WHERE user_id = p_user_id 
-            AND address_type = p_address_type
-        ORDER BY is_default DESC, created_at DESC;
+    IF p_address_type IS NOT NULL THEN
+        RETURN QUERY
+        SELECT 
+            ua.id,
+            ua.user_id,
+            ua.user_name,
+            ua.user_email,
+            ua.address_type,
+            ua.full_address,
+            ua.is_default,
+            ua.is_active,
+            ua.created_at
+        FROM vw_user_addresses ua
+        WHERE ua.user_id = p_user_id 
+            AND ua.address_type = p_address_type
+        ORDER BY ua.is_default DESC, ua.created_at DESC;
     ELSE
-        SELECT * FROM vw_user_addresses
-        WHERE user_id = p_user_id
-        ORDER BY is_default DESC, created_at DESC;
+        RETURN QUERY
+        SELECT 
+            ua.id,
+            ua.user_id,
+            ua.user_name,
+            ua.user_email,
+            ua.address_type,
+            ua.full_address,
+            ua.is_default,
+            ua.is_active,
+            ua.created_at
+        FROM vw_user_addresses ua
+        WHERE ua.user_id = p_user_id
+        ORDER BY ua.is_default DESC, ua.created_at DESC;
     END IF;
-END$
+END;
+$$ LANGUAGE plpgsql;
 
--- ===================================================================
--- CATEGORY PROCEDURES
--- ===================================================================
 
 -- Create Category
-CREATE PROCEDURE sp_create_category(
-    IN p_name VARCHAR(100),
-    IN p_description TEXT,
-    IN p_image_url VARCHAR(500)
-)
+CREATE OR REPLACE FUNCTION sp_create_category(
+    p_name VARCHAR(100),
+    p_description TEXT,
+    p_image_url VARCHAR(500)
+) RETURNS TABLE(category_id INTEGER) AS $$
+DECLARE
+    v_category_id INTEGER;
 BEGIN
     INSERT INTO categories (name, description, image_url)
-    VALUES (p_name, p_description, p_image_url);
+    VALUES (p_name, p_description, p_image_url)
+    RETURNING id INTO v_category_id;
     
-    SELECT LAST_INSERT_ID() AS category_id;
-END$
+    RETURN QUERY SELECT v_category_id;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Update Category
-CREATE PROCEDURE sp_update_category(
-    IN p_category_id INT,
-    IN p_name VARCHAR(100),
-    IN p_description TEXT,
-    IN p_image_url VARCHAR(500)
-)
+CREATE OR REPLACE FUNCTION sp_update_category(
+    p_category_id INTEGER,
+    p_name VARCHAR(100),
+    p_description TEXT,
+    p_image_url VARCHAR(500)
+) RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE categories 
     SET name = p_name,
@@ -1083,62 +992,76 @@ BEGIN
     WHERE id = p_category_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Soft Delete Category
-CREATE PROCEDURE sp_soft_delete_category(IN p_category_id INT)
+CREATE OR REPLACE FUNCTION sp_soft_delete_category(p_category_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE categories 
     SET deleted_at = CURRENT_TIMESTAMP,
-        is_active = 0
+        is_active = FALSE
     WHERE id = p_category_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$
-
--- Hard Delete Category
-CREATE PROCEDURE sp_hard_delete_category(IN p_category_id INT)
-BEGIN
-    DELETE FROM categories WHERE id = p_category_id;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Get Active Categories (AJAX Ready)
-CREATE PROCEDURE sp_get_active_categories()
+CREATE OR REPLACE FUNCTION sp_get_active_categories()
+RETURNS TABLE(
+    category_id INTEGER,
+    category_name VARCHAR(100),
+    description TEXT,
+    image_url VARCHAR(500),
+    product_count BIGINT,
+    min_price NUMERIC,
+    max_price NUMERIC,
+    avg_price NUMERIC
+) AS $$
 BEGIN
+    RETURN QUERY
     SELECT * FROM vw_category_stats
     ORDER BY category_name ASC;
-END$
+END;
+$$ LANGUAGE plpgsql;
 
--- 
--- SUPPLIER PROCEDURES
--- 
 
 -- Create Supplier
-CREATE PROCEDURE sp_create_supplier(
-    IN p_name VARCHAR(100),
-    IN p_email VARCHAR(254),
-    IN p_phone VARCHAR(15),
-    IN p_address TEXT
-)
+CREATE OR REPLACE FUNCTION sp_create_supplier(
+    p_name VARCHAR(100),
+    p_email VARCHAR(254),
+    p_phone VARCHAR(15),
+    p_address TEXT
+) RETURNS TABLE(supplier_id INTEGER) AS $$
+DECLARE
+    v_supplier_id INTEGER;
 BEGIN
     INSERT INTO suppliers (name, email, phone, address)
-    VALUES (p_name, p_email, p_phone, p_address);
+    VALUES (p_name, p_email, p_phone, p_address)
+    RETURNING id INTO v_supplier_id;
     
-    SELECT LAST_INSERT_ID() AS supplier_id;
-END$
+    RETURN QUERY SELECT v_supplier_id;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Update Supplier
-CREATE PROCEDURE sp_update_supplier(
-    IN p_supplier_id INT,
-    IN p_name VARCHAR(100),
-    IN p_email VARCHAR(254),
-    IN p_phone VARCHAR(15),
-    IN p_address TEXT
-)
+CREATE OR REPLACE FUNCTION sp_update_supplier(
+    p_supplier_id INTEGER,
+    p_name VARCHAR(100),
+    p_email VARCHAR(254),
+    p_phone VARCHAR(15),
+    p_address TEXT
+) RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE suppliers 
     SET name = p_name,
@@ -1148,51 +1071,53 @@ BEGIN
     WHERE id = p_supplier_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Soft Delete Supplier
-CREATE PROCEDURE sp_soft_delete_supplier(IN p_supplier_id INT)
+CREATE OR REPLACE FUNCTION sp_soft_delete_supplier(p_supplier_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE suppliers 
     SET deleted_at = CURRENT_TIMESTAMP,
-        is_active = 0
+        is_active = FALSE
     WHERE id = p_supplier_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
--- Hard Delete Supplier
-CREATE PROCEDURE sp_hard_delete_supplier(IN p_supplier_id INT)
-BEGIN
-    DELETE FROM suppliers WHERE id = p_supplier_id;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
-
--- 
--- WAREHOUSE PROCEDURES
--- 
 
 -- Create Warehouse
-CREATE PROCEDURE sp_create_warehouse(
-    IN p_name VARCHAR(100),
-    IN p_address TEXT
-)
+CREATE OR REPLACE FUNCTION sp_create_warehouse(
+    p_name VARCHAR(100),
+    p_address TEXT
+) RETURNS TABLE(warehouse_id INTEGER) AS $$
+DECLARE
+    v_warehouse_id INTEGER;
 BEGIN
     INSERT INTO warehouses (name, address)
-    VALUES (p_name, p_address);
+    VALUES (p_name, p_address)
+    RETURNING id INTO v_warehouse_id;
     
-    SELECT LAST_INSERT_ID() AS warehouse_id;
-END$
+    RETURN QUERY SELECT v_warehouse_id;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Update Warehouse
-CREATE PROCEDURE sp_update_warehouse(
-    IN p_warehouse_id INT,
-    IN p_name VARCHAR(100),
-    IN p_address TEXT
-)
+CREATE OR REPLACE FUNCTION sp_update_warehouse(
+    p_warehouse_id INTEGER,
+    p_name VARCHAR(100),
+    p_address TEXT
+) RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE warehouses 
     SET name = p_name,
@@ -1200,57 +1125,71 @@ BEGIN
     WHERE id = p_warehouse_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Soft Delete Warehouse
-CREATE PROCEDURE sp_soft_delete_warehouse(IN p_warehouse_id INT)
+CREATE OR REPLACE FUNCTION sp_soft_delete_warehouse(p_warehouse_id INTEGER) 
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
 BEGIN
     UPDATE warehouses 
     SET deleted_at = CURRENT_TIMESTAMP,
-        is_active = 0
+        is_active = FALSE
     WHERE id = p_warehouse_id 
         AND deleted_at IS NULL;
     
-    SELECT ROW_COUNT() AS affected_rows;
-END$
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
 
--- Hard Delete Warehouse
-CREATE PROCEDURE sp_hard_delete_warehouse(IN p_warehouse_id INT)
-BEGIN
-    DELETE FROM warehouses WHERE id = p_warehouse_id;
-    
-    SELECT ROW_COUNT() AS affected_rows;
-END$
-
--- 
--- ANALYTICS & REPORTS PROCEDURES
--- 
 
 -- Sales Report by Date Range
-CREATE PROCEDURE sp_sales_report(
-    IN p_start_date DATE,
-    IN p_end_date DATE
-)
+CREATE OR REPLACE FUNCTION sp_sales_report(
+    p_start_date DATE,
+    p_end_date DATE
+) RETURNS TABLE(
+    sale_date DATE,
+    total_orders BIGINT,
+    total_items BIGINT,
+    total_quantity BIGINT,
+    total_revenue NUMERIC
+) AS $$
 BEGIN
+    RETURN QUERY
     SELECT 
-        DATE(o.created_at) AS sale_date,
+        o.created_at::DATE AS sale_date,
         COUNT(DISTINCT o.id) AS total_orders,
         COUNT(oi.id) AS total_items,
         SUM(oi.quantity) AS total_quantity,
         SUM(o.total) AS total_revenue
     FROM orders o
     LEFT JOIN order_items oi ON o.id = oi.order_id
-    WHERE o.created_at BETWEEN p_start_date AND p_end_date
+    WHERE o.created_at::DATE BETWEEN p_start_date AND p_end_date
         AND o.deleted_at IS NULL
         AND o.status != 'cancelled'
-    GROUP BY DATE(o.created_at)
+    GROUP BY o.created_at::DATE
     ORDER BY sale_date DESC;
-END$
+END;
+$$ LANGUAGE plpgsql;
 
 -- Top Selling Products
-CREATE PROCEDURE sp_top_selling_products(IN p_limit INT)
+CREATE OR REPLACE FUNCTION sp_top_selling_products(p_limit INTEGER)
+RETURNS TABLE(
+    id INTEGER,
+    name VARCHAR(200),
+    category_name VARCHAR(100),
+    order_count BIGINT,
+    total_sold BIGINT,
+    total_revenue NUMERIC,
+    current_price DECIMAL(12,2)
+) AS $$
 BEGIN
+    RETURN QUERY
     SELECT 
         p.id,
         p.name,
@@ -1269,11 +1208,23 @@ BEGIN
     GROUP BY p.id, p.name, c.name, p.price
     ORDER BY total_sold DESC
     LIMIT p_limit;
-END$
+END;
+$$ LANGUAGE plpgsql;
 
 -- Customer Orders Statistics
-CREATE PROCEDURE sp_customer_stats(IN p_user_id INT)
+CREATE OR REPLACE FUNCTION sp_customer_stats(p_user_id INTEGER)
+RETURNS TABLE(
+    id INTEGER,
+    name VARCHAR(100),
+    email VARCHAR(254),
+    total_orders BIGINT,
+    completed_orders BIGINT,
+    cancelled_orders BIGINT,
+    total_spent NUMERIC,
+    last_order_date TIMESTAMP
+) AS $$
 BEGIN
+    RETURN QUERY
     SELECT 
         u.id,
         u.name,
@@ -1288,11 +1239,21 @@ BEGIN
     WHERE u.id = p_user_id
         AND u.deleted_at IS NULL
     GROUP BY u.id, u.name, u.email;
-END$
+END;
+$$ LANGUAGE plpgsql;
 
 -- Low Stock Alert
-CREATE PROCEDURE sp_get_low_stock_alerts(IN p_threshold INT)
+CREATE OR REPLACE FUNCTION sp_get_low_stock_alerts(p_threshold INTEGER)
+RETURNS TABLE(
+    id INTEGER,
+    product_name VARCHAR(200),
+    category_name VARCHAR(100),
+    warehouse_name VARCHAR(100),
+    current_stock INTEGER,
+    price DECIMAL(12,2)
+) AS $$
 BEGIN
+    RETURN QUERY
     SELECT 
         p.id,
         p.name AS product_name,
@@ -1305,17 +1266,26 @@ BEGIN
     JOIN categories c ON p.category_id = c.id
     JOIN warehouses w ON st.warehouse_id = w.id
     WHERE st.quantity < p_threshold
-        AND st.is_active = 1
+        AND st.is_active = TRUE
         AND p.deleted_at IS NULL
-        AND p.is_active = 1
+        AND p.is_active = TRUE
         AND w.deleted_at IS NULL
-        AND w.is_active = 1
+        AND w.is_active = TRUE
     ORDER BY st.quantity ASC, p.name ASC;
-END$
+END;
+$$ LANGUAGE plpgsql;
 
 -- Products Without Stock
-CREATE PROCEDURE sp_products_without_stock()
+CREATE OR REPLACE FUNCTION sp_products_without_stock()
+RETURNS TABLE(
+    id INTEGER,
+    name VARCHAR(200),
+    category_name VARCHAR(100),
+    price DECIMAL(12,2),
+    created_at TIMESTAMP
+) AS $$
 BEGIN
+    RETURN QUERY
     SELECT 
         p.id,
         p.name,
@@ -1324,16 +1294,61 @@ BEGIN
         p.created_at
     FROM products p
     JOIN categories c ON p.category_id = c.id
-    LEFT JOIN stock st ON p.id = st.product_id AND st.is_active = 1
+    LEFT JOIN stock st ON p.id = st.product_id AND st.is_active = TRUE
     WHERE p.deleted_at IS NULL
-        AND p.is_active = 1
+        AND p.is_active = TRUE
         AND (st.id IS NULL OR st.quantity = 0)
     ORDER BY p.name ASC;
-END$
+END;
+$$ LANGUAGE plpgsql;
 
-DELIMITER ;
+-- Get Product Stock by Product ID
+CREATE OR REPLACE FUNCTION sp_get_product_stock(p_product_id INTEGER)
+RETURNS TABLE(
+    id INTEGER,
+    product_id INTEGER,
+    product_name VARCHAR(200),
+    warehouse_id INTEGER,
+    warehouse_name VARCHAR(100),
+    quantity INTEGER,
+    updated_at TIMESTAMP
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        s.id,
+        s.product_id,
+        p.name AS product_name,
+        s.warehouse_id,
+        w.name AS warehouse_name,
+        s.quantity,
+        s.updated_at
+    FROM stock s
+    JOIN products p ON s.product_id = p.id
+    JOIN warehouses w ON s.warehouse_id = w.id
+    WHERE s.product_id = p_product_id 
+        AND s.is_active = TRUE
+        AND p.deleted_at IS NULL
+        AND w.deleted_at IS NULL;
+END;
+$$ LANGUAGE plpgsql;
 
--- SAMPLE DATA INSERT (Optional - for testing)
+-- Update Last Login
+CREATE OR REPLACE FUNCTION sp_update_last_login(p_user_id INTEGER)
+RETURNS TABLE(affected_rows INTEGER) AS $$
+DECLARE
+    v_affected INTEGER;
+BEGIN
+    UPDATE users 
+    SET last_login_at = CURRENT_TIMESTAMP
+    WHERE id = p_user_id 
+        AND deleted_at IS NULL;
+    
+    GET DIAGNOSTICS v_affected = ROW_COUNT;
+    RETURN QUERY SELECT v_affected;
+END;
+$$ LANGUAGE plpgsql;
+
 
 -- Insert sample categories
 INSERT INTO categories (name, description) VALUES
@@ -1356,134 +1371,15 @@ INSERT INTO suppliers (name, email, phone, address) VALUES
 ('Island Beverages', 'info@islandbev.lk', '+94112345679', 'Colombo 05, Sri Lanka'),
 ('Global Imports Co', 'sales@globalimports.lk', '+94112345680', 'Colombo 07, Sri Lanka');
 
--- Insert admin user (password: admin123 - hashed with PASSWORD())
+-- Insert admin user (password should be hashed with bcrypt in application)
 INSERT INTO users (name, email, phone, password_hash, is_admin) VALUES
-('Admin User', 'admin@liquorshop.lk', '+94771234567', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1);
+('Admin User', 'admin@liquorshop.lk', '+94771234567', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', TRUE);
 
 -- Insert sample customer
 INSERT INTO users (name, email, phone, password_hash) VALUES
 ('John Doe', 'john@example.com', '+94771234568', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
--- Insert sample address for customer
+-- Insert sample address for customer (user_id 2)
 INSERT INTO user_addresses (user_id, address_type, address_line1, city, postal_code, country, is_default) VALUES
-(2, 'both', '45 Main Street', 'Colombo', '00100', 'Sri Lanka', 1);
-
-
-
-/*
--- Search products by name (AJAX autocomplete)
-CALL sp_search_products('jack', NULL, NULL, NULL, 'name', 'ASC', 10, 0);
-
--- Filter products by price range
-CALL sp_filter_products_by_price(1000.00, 5000.00);
-
--- Get products A-Z
-CALL sp_filter_products_alphabetical('ASC');
-
--- Get products Z-A
-CALL sp_filter_products_alphabetical('DESC');
-
--- Search with multiple filters
-CALL sp_search_products('whiskey', 1, 2000, 10000, 'price', 'DESC', 20, 0);
-
--- Get user orders
-CALL sp_get_user_orders(2, NULL, 10, 0);
-
--- Get user orders by status
-CALL sp_get_user_orders(2, 'completed', 10, 0);
-
--- Get low stock alerts
-CALL sp_get_low_stock_alerts(10);
-
--- Get top selling products
-CALL sp_top_selling_products(10);
-
--- Sales report for date range
-CALL sp_sales_report('2025-01-01', '2025-12-31');
-*/
-
--- PHP API USAGE EXAMPLES
-
-/*
-Example PHP code for using these stored procedures:
-
-<?php
-// Database connection
-$conn = new mysqli("localhost", "username", "password", "liquor_db");
-
-// 1. AJAX Product Search
-$search = $_GET['search'] ?? '';
-$stmt = $conn->prepare("CALL sp_search_products(?, NULL, NULL, NULL, 'name', 'ASC', 10, 0)");
-$stmt->bind_param("s", $search);
-$stmt->execute();
-$result = $stmt->get_result();
-echo json_encode($result->fetch_all(MYSQLI_ASSOC));
-
-// 2. Create Order with Transaction
-$user_id = 2;
-$shipping_id = 1;
-$billing_id = 1;
-$items = json_encode([
-    ['product_id' => 1, 'quantity' => 2],
-    ['product_id' => 3, 'quantity' => 1]
-]);
-$stmt = $conn->prepare("CALL sp_create_order(?, ?, ?, ?)");
-$stmt->bind_param("iiis", $user_id, $shipping_id, $billing_id, $items);
-$stmt->execute();
-
-// 3. Filter Products by Price (AJAX)
-$min = $_GET['min'] ?? 0;
-$max = $_GET['max'] ?? 999999;
-$stmt = $conn->prepare("CALL sp_filter_products_by_price(?, ?)");
-$stmt->bind_param("dd", $min, $max);
-$stmt->execute();
-$result = $stmt->get_result();
-echo json_encode($result->fetch_all(MYSQLI_ASSOC));
-
-// 4. Soft Delete Product
-$product_id = 5;
-$stmt = $conn->prepare("CALL sp_soft_delete_product(?)");
-$stmt->bind_param("i", $product_id);
-$stmt->execute();
-
-// 5. Get Active Products (Simple View Query)
-$result = $conn->query("SELECT * FROM vw_active_products ORDER BY created_at DESC LIMIT 20");
-echo json_encode($result->fetch_all(MYSQLI_ASSOC));
-
-// 6. Update Stock
-$product_id = 1;
-$warehouse_id = 1;
-$quantity = 100;
-$stmt = $conn->prepare("CALL sp_update_stock(?, ?, ?)");
-$stmt->bind_param("iii", $product_id, $warehouse_id, $quantity);
-$stmt->execute();
-
-$conn->close();
-?>
-*/
-
-
-
--- Additional indexes for faster AJAX queries (already included in table definitions)
--- These are already created above but listed here for reference:
--- idx_products_name on products(name, is_active) - for autocomplete
--- idx_products_price on products(price, is_active) - for price filters
--- idx_products_category on products(category_id, is_active) - for category filters
--- idx_orders_user on orders(user_id, created_at) - for user order history
--- idx_orders_status on orders(status, created_at) - for order status filters
-
-
-
-/*
-1. Always use prepared statements in PHP to prevent SQL injection
-2. Hash passwords with password_hash() in PHP before storing
-3. Use password_verify() to check passwords
-4. Implement rate limiting for AJAX requests
-5. Add CSRF tokens to forms
-6. Use HTTPS for all API endpoints
-7. Implement proper session management
-8. Sanitize all user inputs
-9. Use parameterized queries for all database operations
-10. Implement proper error handling (don't expose database errors to users)
-*/
+(2, 'both', '45 Main Street', 'Colombo', '00100', 'Sri Lanka', TRUE);
 

@@ -1,0 +1,23 @@
+[11-Oct-2025 19:43:15 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 174
+[11-Oct-2025 19:43:15 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 175
+[11-Oct-2025 19:43:15 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 176
+[11-Oct-2025 19:43:15 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 177
+[11-Oct-2025 19:43:15 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 179
+[11-Oct-2025 19:43:15 Europe/Berlin] PHP Deprecated:  password_verify(): Passing null to parameter #2 ($hash) of type string is deprecated in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 179
+[11-Oct-2025 19:43:15 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 182
+[11-Oct-2025 19:43:15 Europe/Berlin] PHP Warning:  Undefined array key "Invalid credentials" in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 198
+[11-Oct-2025 19:44:44 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 174
+[11-Oct-2025 19:44:44 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 175
+[11-Oct-2025 19:44:44 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 176
+[11-Oct-2025 19:44:44 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 177
+[11-Oct-2025 19:44:44 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 179
+[11-Oct-2025 19:44:44 Europe/Berlin] PHP Deprecated:  password_verify(): Passing null to parameter #2 ($hash) of type string is deprecated in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 179
+[11-Oct-2025 19:44:44 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 182
+[11-Oct-2025 19:44:44 Europe/Berlin] PHP Warning:  Undefined array key "Invalid credentials" in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 198
+[11-Oct-2025 20:05:56 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 194
+[11-Oct-2025 20:05:56 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 195
+[11-Oct-2025 20:05:56 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 196
+[11-Oct-2025 20:05:56 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 197
+[11-Oct-2025 20:05:56 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 200
+[11-Oct-2025 20:05:56 Europe/Berlin] PHP Deprecated:  password_verify(): Passing null to parameter #2 ($hash) of type string is deprecated in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 200
+[11-Oct-2025 20:05:56 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\royal-liquor\public\auth\auth-handler.php on line 203

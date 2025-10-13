@@ -1,3 +1,8 @@
+
+<?php 
+require_once __DIR__."/config/constants.php";
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,7 +141,7 @@ document.getElementById('ageForm').addEventListener('submit', function(e) {
     
 
     if(ageChecked && termsChecked){
-        window.location.href = 'public/signup/signup.php';
+        window.location.href = "<?=AUTH ?>"
     } else {
         errorElement.textContent = "You have to check all the boxes first"
     }

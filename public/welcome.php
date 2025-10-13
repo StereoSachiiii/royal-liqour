@@ -1,12 +1,8 @@
 <?php 
-require_once __DIR__. "/../public/session/session.php";
+require_once __DIR__ . "/../core/session.php";
 
-$session = new Session();
-
-
-
-
-
+$session = Session::getInstance();
+$username = htmlspecialchars($session->getUsername() ?? "Guest");
 ?>
 
 <!DOCTYPE html>
@@ -14,110 +10,91 @@ $session = new Session();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logging in progress</title>
+    <title>Logging In...</title>
     <style>
-        *{
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        body{
-            display: flex ;
+
+        body {
+            height: 100vh;
+            display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            background: linear-gradient(135deg, #fff, #f9f6f1);
+            font-family: "Inter", Arial, sans-serif;
+            color: #333;
         }
 
-        #not-active{
-            display:none;
-
+        #modal {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 50px 70px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.6s ease-out;
         }
 
-        #active{
-            display: block;
+        #modal h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #444;
         }
 
-        #modal{
-            box-shadow: 20px 20px 20px 20px rgba(0,0,0,0.2);
-            padding:20px;
-            border-radius: 5px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap:30px;
-            font-family: Arial, Helvetica, sans-serif;
-        
+        #username {
+            font-weight: 600;
+            color: #ff914d;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
         }
 
-        #modal:hover{
-            
-            animation: hoverEffect 0.4s ease-in  forwards;
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #ffb347;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+            margin: 0 auto 25px auto;
         }
 
-        @keyframes hoverEffect {
-            0%{
-                transform: translateY();
-            }100%{
-                transform: translateY(-20%);
-            }
-
-   
-            
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
-             @keyframes loadingEffect {
-            0%{
-                width: 0px;
-            }100%{
-                width: 498px;
-            }
-            
+        #message {
+            margin-top: 10px;
+            font-size: 0.95rem;
+            color: #666;
+            opacity: 0;
+            animation: fadeText 2s ease forwards 1s;
         }
 
-        #loader{
-            width: 500px;
-            height: 10px;
-            border: 2px solid black;
-            border-radius: 5px;
-            position: relative;
+        @keyframes fadeText {
+            to { opacity: 1; }
         }
 
-        #progress{
-            
-            position: absolute;
-            top:0px;
-            left:0;
-            background: greenyellow;
-            width: 100%;
-            height: 100%;
-            animation: loadingEffect 1.5s ease-in forwards;
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
-
-
-        
     </style>
 </head>
 <body>
     <div id="modal">
-        Hold on we are Logging you in!
-
-        <div id="loader">
-
-            <div id="progress">
-
-            </div>
-            
-        </div>
+        <h2>Logging you in...</h2>
+        <div id="username"><?= $username ?></div>
+        <div class="spinner"></div>
+        <div id="message">Preparing your dashboard ☕</div>
     </div>
 
-
-
-<script>
-    setTimeout(()=>{
-        window.location.href = "index.php"
-    },1500)
-
-</script>
-
+    <script>
+        setTimeout(() => {
+            window.location.href = "index.php";
+        }, 4000);
+    </script>
 </body>
 </html>

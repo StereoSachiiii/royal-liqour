@@ -1,8 +1,12 @@
 <?php
-require_once __DIR__ . "/../session/session.php";
-require_once __DIR__ . "/../config/constants.php";
+require_once __DIR__ . "/../../core/session.php";
+require_once __DIR__ . "/../../config/constants.php";
 
-$session = new Session();
+
+$session = Session::getInstance();
+$username=$session->getUsername();
+
+
 
 $currentUser = [
     "user_id" => $session->get("user_id"),
@@ -73,13 +77,30 @@ $currentUser = [
 
    <div class="profile-expand">
 
-        <div class="profile-close">
+   <div class="closeBtn-container">
+     <div class="profile-close">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" height="36px" width="36px">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-          </svg>
-
-      
+          </svg> 
       </div>
+    </div> 
+      <div class="profile-items">
+       <div class="profile-info">
+        <div class="profile-item">
+          <?= $currentUser['username'] ?>
+        </div>
+        
+        <div class="profile-item">
+          <?= $currentUser['email'] ?>
+        </div>
+      
+        
+       
+
+      </div>
+
+   </div>
+       
     
       </div>
 
