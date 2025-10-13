@@ -58,28 +58,33 @@ class UserRepository
             ':phone' => $phone,
             ':password_hash' => $passwordHash
         ]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = $stmt->fetch();
 
-        if ($result === false || !isset($result['user_id'])) {
+        if ($row === false) {
             throw new RuntimeException('Failed to create user.');
         }
 
-        $userId = (int) $result['user_id'];
-        return $this->getUserById($userId);
+        return new UserModel(
+            id: (int) $row['id'],
+            name: $row['name'],
+            email: $row['email'],
+            phone: $row['phone'],
+            passwordHash: $row['password_hash'],
+            profileImageUrl: $row['profile_image_url'],
+            isActive: (bool) $row['is_active'],
+            isAdmin: (bool) $row['is_admin'],
+            isAnonymized: (bool) $row['is_anonymized'],
+            createdAt: $row['created_at'],
+            updatedAt: $row['updated_at'],
+            deletedAt: $row['deleted_at'],
+            anonymizedAt: $row['anonymized_at'],
+            lastLoginAt: $row['last_login_at']
+        );
     }
 
-    /**
-     * Create a new admin user using the sp_create_user stored procedure.
-     *
-     * @param string $name
-     * @param string $email
-     * @param string|null $phone
-     * @param string $password
-     * @return UserModel|null
-     * @throws InvalidArgumentException If input validation fails
-     * @throws RuntimeException If database operation fails
-     */
-    public function createAdminUser(string $name, string $email, ?string $phone, string $password): ?UserModel
+
+
+        public function createAdminUser(string $name, string $email, ?string $phone, string $password): ?UserModel
     {
         if (strlen($name) < 1 || strlen($name) > 100) {
             throw new InvalidArgumentException('Name must be between 1 and 100 characters.');
@@ -103,25 +108,38 @@ class UserRepository
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
         $stmt = $this->pdo->prepare(
-            'INSERT INTO users(name, email, phone, password_hash, is_admin) 
-             VALUES (:name, :email, :phone, :password_hash, :is_admin) 
-             RETURNING id'
+            'INSERT into users(name,email,phone,password_hash,is_admin) VALUES (:name, :email, :phone,
+            :password_hash, is_admin) '
         );
         $stmt->execute([
             ':name' => $name,
             ':email' => $email,
             ':phone' => $phone,
             ':password_hash' => $passwordHash,
-            ':is_admin' => true
+            ":is_admin" => true
         ]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = $stmt->fetch();
 
-        if ($result === false || !isset($result['id'])) {
-            throw new RuntimeException('Failed to create an Admin user.');
+        if ($row === false) {
+            throw new RuntimeException('Failed to create an Admin  user.');
         }
 
-        $userId = (int) $result['id'];
-        return $this->getUserById($userId);
+        return new UserModel(
+            id: (int) $row['id'],
+            name: $row['name'],
+            email: $row['email'],
+            phone: $row['phone'],
+            passwordHash: $row['password_hash'],
+            profileImageUrl: $row['profile_image_url'],
+            isActive: (bool) $row['is_active'],
+            isAdmin: (bool) $row['is_admin'],
+            isAnonymized: (bool) $row['is_anonymized'],
+            createdAt: $row['created_at'],
+            updatedAt: $row['updated_at'],
+            deletedAt: $row['deleted_at'],
+            anonymizedAt: $row['anonymized_at'],
+            lastLoginAt: $row['last_login_at']
+        );
     }
 
     /**

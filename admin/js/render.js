@@ -16,8 +16,13 @@ export const render = async (path, mainElement) => {
             mainElement.innerHTML = Overview();
             break;
         case 'users':
-            mainElement.innerHTML = await Users(); // Await async Users function
-            break;
+            mainElement.innerHTML = await Users(); 
+
+            //new
+        case 'products':
+            mainElement.innerHTML = await products();
+
+
         default:
             mainElement.innerHTML = Overview(); // Default to overview
             break;

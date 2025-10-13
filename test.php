@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         try {
-            $user = $repo->createUser($name, $email, null, $password);
+            $user = $repo->createAdminUser($name, $email, null, $password);
             $session->login(['id' => $user->getId(), 'name' => $name, 'email' => $email, 'is_admin' => true]);
             header('Location: /royal-liquor/');
             echo json_encode(['success' => true, 'message' => 'Admin created']);

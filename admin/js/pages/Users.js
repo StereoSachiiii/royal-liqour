@@ -11,7 +11,7 @@ async function fetchUsers(limit = DEFAULT_LIMIT, offset = 0) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            credentials: 'include' // Include cookies for session
+            credentials: 'include' 
         });
 
         if (!response.ok) {
@@ -57,7 +57,7 @@ async function loadMoreUsers() {
 }
 
 export const Users = async () => {
-    currentOffset = 0; // Reset offset for initial render
+    currentOffset = 0;
     const users = await fetchUsers(DEFAULT_LIMIT, currentOffset);
 
     if (users.error) {
