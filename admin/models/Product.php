@@ -1,32 +1,53 @@
 <?php 
-class ProductModel{
-    private  $id;
-    private  $name;
-    private  $description;
-    private  $price;
-    private  $imageUrl;
-    private  $categoryId;
-    private $categoryName;
-    private  $supplierId;
-    private $supplierName;  
-    private $totalStock;
-    private  $isActive;
-    private  $createdAt;
-    private  $updatedAt;
+class Product{
+    private ?int $id;
+    private ?string $name;
+    private ?string $description;
+    private int|float|null $price;
+    private  ?string  $imageUrl;
+    private  ?int $categoryId;
+    private  ?int $supplierId;
+   
+    private  ?bool $isActive;
+    private  ?string $createdAt;
+    private  ?string $updatedAt;
+    /**
+     * @param ?int  $id
+     * @param ?string  $name
+     * @param ?string  $description
+     * @param int|float|null $price
+     * @param ?string $imageUrl
+     * @param ?int $categoryId
+     * @param ?int $supplierId
+     * @param ?bool $isActive
+     * @param ?string $createdAt
+     * @param ?string $updatedAt
+     */
+  
+    /**
+     * Summary of __construct
+     * @param mixed $id
+     * @param mixed $name
+     * @param mixed $description
+     * @param float|null|int $price
+     * @param mixed $imageUrl
+     * @param mixed $categoryId
+     * @param mixed $supplierId
+     * @param mixed $isActive
+     * @param mixed $createdAt
+     * @param mixed $updatedAt
+     */
     public function __construct(
-         $id,
-         $name,
-         $description,
-         $price,
-         $imageUrl,
-         $categoryId,
-         $categoryName,
-         $supplierId,
-         $supplierName,
-         $isActive,
-         $totalStock,
-         $createdAt,
-         $updatedAt
+        ?int $id,
+        ?string $name,
+        ?string $description,
+        float|null|int $price,
+        ?string $imageUrl,
+        ?int $categoryId,
+        ?int $supplierId,
+        ?bool $isActive,     
+        ?string $createdAt,
+        ?string $updatedAt,
          
     ){
 
@@ -36,15 +57,11 @@ class ProductModel{
         $this->price = $price;
         $this->imageUrl = $imageUrl;
         $this->categoryId = $categoryId;
-        $this->categoryName=$categoryName;
         $this->supplierId = $supplierId;
-        $this->supplierName = $supplierName;
-        $this->totalStock = $totalStock;
         $this->isActive=$isActive;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
         
-
     }
 
     public function getId(){
@@ -103,34 +120,27 @@ class ProductModel{
     public function setCreatedAt($createdAt){
         $this->createdAt=$createdAt;
     }
-    public function toArray():array{
 
+    /**
+     * Summary of toArray
+     * returns the object as an assosiative array
+     * @return array{category_id: int|null, created_at: string|null, description: string|null, id: int|null, image_url: string|null, is_active: bool|null, name: string|null, price: float|int|null, supplier_id: int|null, updated_at: string|null}
+     */
+    public function toArray():array{
         $product = [
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
             'price' => $this->price,
             'image_url' => $this->imageUrl,
-            'category_id' => $this->categoryId,
-            'category_name' => $this->categoryName,
-            'supplier_id' => $this->supplierId,
-            'supplier_name' => $this->supplierName,
+            'category_id'  => $this->categoryId,
+            'supplier_id'  => $this->supplierId,
             'is_active' => $this->isActive,
             'created_at' => $this->createdAt,
-            'updated_at' => $this->updatedAt
+            'updated_at' => $this->updatedAt,
         ];
         return $product;
-        
-        
-
-
-
-
-
     }
-
-
-
 }
 
 ?>

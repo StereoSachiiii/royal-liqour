@@ -1,32 +1,82 @@
 <?php
-
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../core/Session.php';
 require_once __DIR__ . '/../repositories/UserRepository.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../validators/UserValidator.php';
 
+// Custom exceptions
+require_once __DIR__ . '/../exceptions/DuplicateEmailException.php';
+require_once __DIR__ . '/../exceptions/ValidationException.php';
+require_once __DIR__ . '/../exceptions/NotFoundException.php';
+require_once __DIR__ . '/../exceptions/UnauthorizedException.php';
+
+/**
+ * UserController handles all user-related operations including registration, authentication,
+ * profile management, address handling, and admin-only user retrieval.
+ *
+ * All methods return a standardized array structure:
+ * ```php
+ * [
+ *     'success' => bool,
+ *     'message' => string,
+ *     'data'    => array|null,   // Only present on success
+ *     'code'    => int,          // HTTP-like status code
+ *     'context' => array         // Additional debug/context info (errors)
+ * ]
+ * ```
+ *
+ * Validation methods in UserValidator are **static** and must be called using `::`.
+ */
 class UserController
 {
     private UserRepository $userRepository;
+    private ?UserValidator $userValidator;
 
+    /**
+     * Initialize repository and validator.
+     */
     public function __construct()
     {
         $this->userRepository = new UserRepository();
+        $this->userValidator = new UserValidator();
     }
 
     /**
-     * Register a new user.
+     * Register a new regular user.
      *
-     * @param array $data
-     * @return array
+     * @param array{
+     *     name: string,
+     *     email: string,
+     *     phone?: string|null,
+     *     password: string
+     * } $data User registration data.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array{id: int, name: string, email: string, is_admin: bool},
+     *     code: int,
+     *     context: array
+     * }
+     *
+     * @throws DuplicateEmailException If email is already registered.
+     * @throws ValidationException If input validation fails.
+     * @throws RuntimeException On database or system failure.
      */
     public function register(array $data): array
     {
         try {
-            if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
-                return ['success' => false, 'message' => 'Name, email, and password are required'];
+            // Check for duplicate email
+            if ($this->userRepository->getUserByEmail($data['email'])) {
+                throw new DuplicateEmailException(context: ['email' => $data['email']]);
             }
 
+            // Validate input
+            UserValidator::validateCreate($data);
+
+            // Create user
             $user = $this->userRepository->createUser(
                 $data['name'],
                 $data['email'],
@@ -35,95 +85,251 @@ class UserController
             );
 
             if ($user === null) {
-                return ['success' => false, 'message' => 'Registration failed'];
+                throw new NotFoundException("User was not created successfully.");
             }
 
-            // Start session and set data
-            session_start();
-            $_SESSION['user_id'] = $user->getId();
-            $_SESSION['is_admin'] = $user->isAdmin();
-            $_SESSION['email'] = $user->getEmail();
+            // Log user in
+            Session::getInstance()->login([
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'email' => $user->getEmail(),
+                'is_admin' => $user->isAdmin()
+            ]);
 
             return [
                 'success' => true,
                 'message' => 'User registered successfully',
-                'user' => [
+                'data' => [
                     'id' => $user->getId(),
                     'name' => $user->getName(),
                     'email' => $user->getEmail(),
                     'is_admin' => $user->isAdmin()
-                ]
+                ],
+                'code' => 201,
+                'context' => []
             ];
-        } catch (InvalidArgumentException $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
+        } catch (DuplicateEmailException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Registration failed: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
-     * Login user.
+     * Register a new admin user.
      *
-     * @param array $data
-     * @return array
+     * @param array{
+     *     name: string,
+     *     email: string,
+     *     phone?: string|null,
+     *     password: string
+     * } $data Admin user registration data.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array{id: int, name: string, email: string, is_admin: bool},
+     *     code: int,
+     *     context: array
+     * }
+     *
+     * @throws ValidationException If input is invalid or email exists.
+     * @throws RuntimeException On system failure.
+     */
+    public function registerAdminUser(array $data): array
+    {
+        try {
+            // Check email uniqueness
+            if ($this->userRepository->getUserByEmail($data['email'])) {
+                throw new ValidationException('Email already registered.', context: ['email' => $data['email']]);
+            }
+
+            // Validate input
+            UserValidator::validateCreate($data);
+
+            // Create admin user
+            $user = $this->userRepository->createAdminUser(
+                $data['name'],
+                $data['email'],
+                $data['phone'] ?? null,
+                $data['password']
+            );
+
+            if ($user === null) {
+                throw new RuntimeException('Failed to create admin user.');
+            }
+
+            // Log admin in
+            Session::getInstance()->login([
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'email' => $user->getEmail(),
+                'is_admin' => $user->isAdmin()
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Admin user registered successfully',
+                'data' => [
+                    'id' => $user->getId(),
+                    'name' => $user->getName(),
+                    'email' => $user->getEmail(),
+                    'is_admin' => $user->isAdmin()
+                ],
+                'code' => 201,
+                'context' => []
+            ];
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
+        } catch (RuntimeException $e) {
+            return [
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
+        }
+    }
+
+    /**
+     * Authenticate a user via email and password.
+     *
+     * @param array{email: string, password: string} $data Login credentials.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array{id: int, name: string, email: string, is_admin: bool},
+     *     code: int,
+     *     context: array
+     * }
+     *
+     * @throws ValidationException If input is invalid.
+     * @throws RuntimeException On system failure.
      */
     public function login(array $data): array
     {
         try {
-            if (empty($data['email']) || empty($data['password'])) {
-                return ['success' => false, 'message' => 'Email and password are required'];
-            }
+            UserValidator::loginValidate($data);
 
             $user = $this->userRepository->getUserByEmail($data['email']);
+
             if (!$user || !password_verify($data['password'], $user->getPasswordHash())) {
-                return ['success' => false, 'message' => 'Invalid credentials'];
+                return [
+                    'success' => false,
+                    'message' => 'Invalid credentials',
+                    'data' => null,
+                    'code' => 401,
+                    'context' => []
+                ];
             }
 
-            if (!$user->isActive()) {
-                return ['success' => false, 'message' => 'Account is inactive'];
-            }
-
-            // Update last login
+            // Update last login timestamp
             $this->userRepository->updateLastLogin($user->getId());
 
             // Start session
-            session_start();
-            $_SESSION['user_id'] = $user->getId();
-            $_SESSION['is_admin'] = $user->isAdmin();
-            $_SESSION['email'] = $user->getEmail();
+            Session::getInstance()->login([
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'email' => $user->getEmail(),
+                'is_admin' => $user->isAdmin()
+            ]);
 
             return [
                 'success' => true,
                 'message' => 'Login successful',
-                'user' => [
+                'data' => [
                     'id' => $user->getId(),
                     'name' => $user->getName(),
                     'email' => $user->getEmail(),
                     'is_admin' => $user->isAdmin()
-                ]
+                ],
+                'code' => 200,
+                'context' => []
+            ];
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
             ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Login failed: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Login failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
-     * Get user profile.
+     * Retrieve user profile by ID.
      *
-     * @param int $userId
-     * @return array
+     * @param int $userId The primary key of the user.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array{
+     *         id: int,
+     *         name: string,
+     *         email: string,
+     *         phone: ?string,
+     *         profile_image_url: ?string,
+     *         is_active: bool,
+     *         is_admin: bool,
+     *         created_at: string,
+     *         last_login_at: ?string
+     *     },
+     *     code: int,
+     *     context: array
+     * }
      */
     public function getProfile(int $userId): array
     {
         try {
+            UserValidator::validateProfileId($userId);
+
             $user = $this->userRepository->getUserById($userId);
             if (!$user) {
-                return ['success' => false, 'message' => 'User not found'];
+                throw new NotFoundException('User not found.', context: ['userId' => $userId]);
             }
 
             return [
                 'success' => true,
-                'user' => [
+                'message' => 'User profile retrieved successfully',
+                'data' => [
                     'id' => $user->getId(),
                     'name' => $user->getName(),
                     'email' => $user->getEmail(),
@@ -133,26 +339,75 @@ class UserController
                     'is_admin' => $user->isAdmin(),
                     'created_at' => $user->getCreatedAt(),
                     'last_login_at' => $user->getLastLoginAt()
-                ]
+                ],
+                'code' => 200,
+                'context' => []
+            ];
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => 'Validation failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
+        } catch (NotFoundException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
             ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Failed to retrieve profile: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Failed to retrieve profile: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
      * Update user profile.
      *
-     * @param int $userId
-     * @param array $data
-     * @return array
+     * @param int $userId The user ID to update.
+     * @param array{
+     *     name?: ?string,
+     *     email?: ?string,
+     *     phone?: ?string,
+     *     password?: ?string,
+     *     profile_image_url?: ?string
+     * } $data Fields to update (all optional).
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array{
+     *         id: int,
+     *         name: string,
+     *         email: string,
+     *         phone: ?string,
+     *         profile_image_url: ?string,
+     *         is_active: bool,
+     *         is_admin: bool,
+     *         created_at: string,
+     *         last_login_at: ?string
+     *     },
+     *     code: int,
+     *     context: array
+     * }
      */
     public function updateProfile(int $userId, array $data): array
     {
         try {
+            UserValidator::validateUpdate($data);
+
             $user = $this->userRepository->getUserById($userId);
             if (!$user) {
-                return ['success' => false, 'message' => 'User not found'];
+                throw new NotFoundException('User not found.', context: ['userId' => $userId]);
             }
 
             $updatedUser = $this->userRepository->updateUser(
@@ -165,19 +420,22 @@ class UserController
             );
 
             if ($updatedUser === null) {
-                return ['success' => false, 'message' => 'Profile update failed'];
+                throw new RuntimeException('Failed to update user profile.');
             }
 
-            // Update session data if necessary
-            session_start();
+            // Update session if email or name changed
+            $session = Session::getInstance();
             if (isset($data['email']) && $data['email'] !== $user->getEmail()) {
-                $_SESSION['email'] = $updatedUser->getEmail();
+                $session->set('email', $updatedUser->getEmail());
+            }
+            if (isset($data['name']) && $data['name'] !== $user->getName()) {
+                $session->set('name', $updatedUser->getName());
             }
 
             return [
                 'success' => true,
                 'message' => 'Profile updated successfully',
-                'user' => [
+                'data' => [
                     'id' => $updatedUser->getId(),
                     'name' => $updatedUser->getName(),
                     'email' => $updatedUser->getEmail(),
@@ -187,48 +445,117 @@ class UserController
                     'is_admin' => $updatedUser->isAdmin(),
                     'created_at' => $updatedUser->getCreatedAt(),
                     'last_login_at' => $updatedUser->getLastLoginAt()
-                ]
+                ],
+                'code' => 200,
+                'context' => []
             ];
-        } catch (InvalidArgumentException $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
+        } catch (NotFoundException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Profile update failed: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Profile update failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
-     * Anonymize user.
+     * Anonymize a user (GDPR compliance).
      *
-     * @param int $userId
-     * @return array
+     * @param int $userId The user ID to anonymize.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: null,
+     *     code: int,
+     *     context: array
+     * }
      */
     public function anonymizeUser(int $userId): array
     {
         try {
+            UserValidator::validateProfileId($userId);
+
             $affected = $this->userRepository->anonymizeUser($userId);
+
             if ($affected > 0) {
-                session_start();
-                session_destroy();
-                return ['success' => true, 'message' => 'User anonymized successfully'];
+                return [
+                    'success' => true,
+                    'message' => 'User anonymized successfully',
+                    'data' => null,
+                    'code' => 200,
+                    'context' => []
+                ];
             }
-            return ['success' => false, 'message' => 'Anonymization failed'];
+
+            throw new RuntimeException('No user was anonymized.');
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => 'Invalid user ID: ' . $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Anonymization failed: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Anonymization failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
-     * Create a user address.
+     * Create a new address for a user.
      *
-     * @param int $userId
-     * @param array $data
-     * @return array
+     * @param int $userId Owner of the address.
+     * @param array{
+     *     address_line1: string,
+     *     address_line2?: ?string,
+     *     city: string,
+     *     state?: ?string,
+     *     postal_code: string,
+     *     country: string,
+     *     address_type?: string,
+     *     is_default?: bool
+     * } $data Address details.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array{address_id: int},
+     *     code: int,
+     *     context: array
+     * }
      */
     public function createAddress(int $userId, array $data): array
     {
         try {
+            UserValidator::validateProfileId($userId);
+
             if (empty($data['address_line1']) || empty($data['city']) || empty($data['postal_code']) || empty($data['country'])) {
-                return ['success' => false, 'message' => 'Required address fields are missing'];
+                throw new ValidationException('Required address fields are missing.', context: ['missing' => ['address_line1', 'city', 'postal_code', 'country']]);
             }
 
             $addressId = $this->userRepository->createAddress(
@@ -244,47 +571,112 @@ class UserController
             );
 
             if ($addressId) {
-                return ['success' => true, 'message' => 'Address created successfully', 'address_id' => $addressId];
+                return [
+                    'success' => true,
+                    'message' => 'Address created successfully',
+                    'data' => ['address_id' => $addressId],
+                    'code' => 201,
+                    'context' => []
+                ];
             }
-            return ['success' => false, 'message' => 'Address creation failed'];
-        } catch (InvalidArgumentException $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
+
+            throw new RuntimeException('Address creation failed.');
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Address creation failed: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Address creation failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
-     * Get user addresses.
+     * Retrieve user addresses, optionally filtered by type.
      *
-     * @param int $userId
-     * @param string|null $addressType
-     * @return array
+     * @param int $userId The user ID.
+     * @param ?string $addressType Filter: 'billing', 'shipping', 'both', or null.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array,
+     *     code: int,
+     *     context: array
+     * }
      */
     public function getAddresses(int $userId, ?string $addressType = null): array
     {
         try {
+            if ($addressType !== null && !in_array($addressType, ['billing', 'shipping', 'both'])) {
+                throw new ValidationException('Invalid address_type. Must be billing, shipping, or both.', context: ['addressType' => $addressType]);
+            }
+
             $addresses = $this->userRepository->getUserAddresses($userId, $addressType);
-            return ['success' => true, 'addresses' => $addresses];
-        } catch (InvalidArgumentException $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
+
+            return [
+                'success' => true,
+                'message' => 'Addresses retrieved successfully',
+                'data' => $addresses,
+                'code' => 200,
+                'context' => []
+            ];
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Failed to retrieve addresses: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Failed to retrieve addresses: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
-     * Update a user address.
+     * Update an existing address.
      *
-     * @param int $addressId
-     * @param array $data
-     * @return array
+     * @param int $addressId The address ID to update.
+     * @param array{
+     *     address_line1?: string,
+     *     address_line2?: ?string,
+     *     city?: string,
+     *     state?: ?string,
+     *     postal_code?: string,
+     *     country?: string,
+     *     address_type?: string,
+     *     is_default?: bool
+     * } $data Fields to update.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: null,
+     *     code: int,
+     *     context: array
+     * }
      */
     public function updateAddress(int $addressId, array $data): array
     {
         try {
             if (empty($data['address_line1']) || empty($data['city']) || empty($data['postal_code']) || empty($data['country'])) {
-                return ['success' => false, 'message' => 'Required address fields are missing'];
+                throw new ValidationException('Required address fields are missing.', context: ['required' => ['address_line1', 'city', 'postal_code', 'country']]);
             }
 
             $affected = $this->userRepository->updateAddress(
@@ -300,69 +692,232 @@ class UserController
             );
 
             if ($affected > 0) {
-                return ['success' => true, 'message' => 'Address updated successfully'];
+                return [
+                    'success' => true,
+                    'message' => 'Address updated successfully',
+                    'data' => null,
+                    'code' => 200,
+                    'context' => []
+                ];
             }
-            return ['success' => false, 'message' => 'Address update failed'];
-        } catch (InvalidArgumentException $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
+
+            throw new NotFoundException('Address not found or no changes made.', context: ['addressId' => $addressId]);
+        } catch (ValidationException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
+        } catch (NotFoundException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Address update failed: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Address update failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
-     * Delete a user address.
+     * Soft-delete a user address.
      *
-     * @param int $addressId
-     * @return array
+     * @param int $addressId The address ID to delete.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: null,
+     *     code: int,
+     *     context: array
+     * }
      */
     public function deleteAddress(int $addressId): array
     {
         try {
             $affected = $this->userRepository->softDeleteAddress($addressId);
+
             if ($affected > 0) {
-                return ['success' => true, 'message' => 'Address deleted successfully'];
+                return [
+                    'success' => true,
+                    'message' => 'Address deleted successfully',
+                    'data' => null,
+                    'code' => 200,
+                    'context' => []
+                ];
             }
-            return ['success' => false, 'message' => 'Address deletion failed'];
+
+            throw new NotFoundException('Address not found.', context: ['addressId' => $addressId]);
+        } catch (NotFoundException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
         } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Address deletion failed: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Address deletion failed: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 
     /**
-     * Get all users (for admin).
+     * Get paginated list of all users (admin only).
      *
-     * @param int $limit
-     * @param int $offset
-     * @return array
+     * @param int $limit Maximum number of users to return.
+     * @param int $offset Pagination offset.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array<array{
+     *         id: int,
+     *         name: string,
+     *         email: string,
+     *         phone: ?string,
+     *         is_active: bool,
+     *         is_admin: bool,
+     *         created_at: string,
+     *         last_login_at: ?string
+     *     }>,
+     *     code: int,
+     *     context: array
+     * }
      */
     public function getAllUsers(int $limit = 50, int $offset = 0): array
     {
         try {
-            session_start();
-            if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-                return ['success' => false, 'message' => 'Unauthorized'];
+            if (!Session::getInstance()->isAdmin()) {
+                throw new UnauthorizedException('Access denied: admin privileges required.', context: ['action' => 'getAllUsers']);
             }
 
             $users = $this->userRepository->getAllUsers($limit, $offset);
-            $userData = array_map(function ($user) {
-                return [
+
+            $userData = array_map(fn($user) => [
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'email' => $user->getEmail(),
+                'phone' => $user->getPhone(),
+                'is_active' => $user->isActive(),
+                'is_admin' => $user->isAdmin(),
+                'created_at' => $user->getCreatedAt(),
+                'last_login_at' => $user->getLastLoginAt()
+            ], $users);
+
+            return [
+                'success' => true,
+                'message' => 'Users retrieved successfully',
+                'data' => $userData,
+                'code' => 200,
+                'context' => []
+            ];
+        } catch (UnauthorizedException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
+        } catch (RuntimeException $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to retrieve users: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
+        }
+    }
+
+    /**
+     * Retrieve full user details by ID (admin or self).
+     *
+     * @param int $userId The user ID to fetch.
+     *
+     * @return array{
+     *     success: bool,
+     *     message: string,
+     *     data?: array{
+     *         id: int,
+     *         name: string,
+     *         email: string,
+     *         phone: ?string,
+     *         profileImageUrl: ?string,
+     *         isActive: bool,
+     *         isAdmin: bool,
+     *         isAnonymized: bool,
+     *         createdAt: string,
+     *         updatedAt: ?string,
+     *         deleteAt: ?string,
+     *         anonymizedAt: ?string,
+     *         lastLoginAt: ?string
+     *     },
+     *     code: int,
+     *     context: array
+     * }
+     */
+    public function getUserById(int $userId): array
+    {
+        try {
+            $user = $this->userRepository->getUserById($userId);
+            if (!$user) {
+                throw new NotFoundException('User not found.', context: ['userId' => $userId]);
+            }
+
+            return [
+                'success' => true,
+                'message' => 'User retrieved successfully',
+                'data' => [
                     'id' => $user->getId(),
                     'name' => $user->getName(),
                     'email' => $user->getEmail(),
                     'phone' => $user->getPhone(),
-                    'is_active' => $user->isActive(),
-                    'is_admin' => $user->isAdmin(),
-                    'created_at' => $user->getCreatedAt(),
-                    'last_login_at' => $user->getLastLoginAt()
-                ];
-            }, $users);
-
-            return ['success' => true, 'users' => $userData];
-        } catch (RuntimeException $e) {
-            return ['success' => false, 'message' => 'Failed to retrieve users: ' . $e->getMessage()];
+                    'profileImageUrl' => $user->getProfileImageUrl(),
+                    'isActive' => $user->isActive(),
+                    'isAdmin' => $user->isAdmin(),
+                    'isAnonymized' => $user->isAnonymized(),
+                    'createdAt' => $user->getCreatedAt(),
+                    'updatedAt' => $user->getUpdatedAt(),
+                    'deleteAt' => $user->getDeletedAt(),
+                    'anonymizedAt' => $user->getAnonymizedAt(),
+                    'lastLoginAt' => $user->getLastLoginAt()
+                ],
+                'code' => 200,
+                'context' => []
+            ];
+        } catch (NotFoundException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+                'code' => $e->getStatusCode(),
+                'context' => $e->getContext()
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Error fetching user: ' . $e->getMessage(),
+                'data' => null,
+                'code' => 500,
+                'context' => []
+            ];
         }
     }
 }
-
-?>

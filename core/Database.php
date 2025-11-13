@@ -25,7 +25,7 @@ public static  function getPdo(): PDO {
         return self::$pdo;
 
         } catch (PDOException $e) {
-        die("❌ PDO Connection Error: " . $e->getMessage());
+        die(" PDO Connection Error: " . $e->getMessage());
     }    
 }
     return self::$pdo;

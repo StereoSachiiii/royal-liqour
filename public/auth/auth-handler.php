@@ -175,7 +175,7 @@ if(isset($_POST['action'])&&($_POST['action']==="login")){
             exit;
         }
 try{ 
-    $stmt = $pdo->prepare("SELECT id,name,email,password_hash FROM users WHERE email=:email");
+    $stmt = $pdo->prepare("SELECT id,name,email,password_hash,is_admin FROM users WHERE email=:email");
 
     $stmt->execute([
     ':email' => $email,
@@ -211,6 +211,11 @@ try{
         exit;
     }
 
+    if($row['is_admin']){
+
+    }
+
+
     //check for match
     if(($row['email']===$email)&&$passwordVerify){
 
@@ -218,7 +223,21 @@ try{
             'id' => $user_id,
             'name' => $name,
             'email' => $email,
+            
         ];
+
+         if($row['is_admin']){
+
+              $userData = [
+            'id' => $user_id,
+            'name' => $name,
+            'email' => $email,
+            'is_admin' => true
+        ];
+        
+    }
+
+
 
     $session->login($userData);
     echo json_encode([

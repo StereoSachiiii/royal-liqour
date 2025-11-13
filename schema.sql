@@ -748,24 +748,38 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
--- Create User
 CREATE OR REPLACE FUNCTION sp_create_user(
     p_name VARCHAR(100),
     p_email VARCHAR(254),
     p_phone VARCHAR(15),
     p_password_hash VARCHAR(255)
-) RETURNS TABLE(user_id INTEGER) AS $$
-DECLARE
-    v_user_id INTEGER;
+) RETURNS TABLE(
+    id INTEGER,
+    name VARCHAR(100),
+    email VARCHAR(254),
+    phone VARCHAR(15),
+    password_hash VARCHAR(255),
+    profile_image_url VARCHAR(255),
+    is_active BOOLEAN,
+    is_admin BOOLEAN,
+    is_anonymized BOOLEAN,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP,
+    anonymized_at TIMESTAMP,
+    last_login_at TIMESTAMP
+) AS $$
 BEGIN
+    RETURN QUERY
     INSERT INTO users (name, email, phone, password_hash)
     VALUES (p_name, p_email, p_phone, p_password_hash)
-    RETURNING id INTO v_user_id;
-    
-    RETURN QUERY SELECT v_user_id;
+    RETURNING id, name, email, phone, password_hash, profile_image_url,
+              is_active, is_admin, is_anonymized, created_at, updated_at,
+              deleted_at, anonymized_at, last_login_at;
 END;
 $$ LANGUAGE plpgsql;
+
+
 
 -- Anonymize User (GDPR Compliance)
 CREATE OR REPLACE FUNCTION sp_anonymize_user(p_user_id INTEGER) 

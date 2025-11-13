@@ -17,7 +17,6 @@ const pages = [
     { page: "Settings", path: "settings" }
 ];
 
-// Current state - just one variable!
 let currentPage = "Overview";
 
 // Navigation function

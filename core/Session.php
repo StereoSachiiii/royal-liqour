@@ -7,7 +7,7 @@ class Session {
     private $timeout; // inactivity timeout in seconds
     private CSRF $csrf; // CSRF instance
 
-    private function __construct($timeout = 1800) { // default 30 min
+    private function __construct($timeout = 86400) { // default 30 min
         $this->timeout = $timeout;
 
         // SESSION HARDENING SETTINGS
@@ -16,7 +16,7 @@ class Session {
             ini_set('session.use_only_cookies', 1);     // No URL session IDs
             ini_set('session.cookie_httponly', 1);      // JS cannot read cookies
             ini_set('session.cookie_secure', 0);        // Set 1 on HTTPS
-            ini_set('session.cookie_samesite', 'Lax');  // CSRF mitigation
+            ini_set('session.cookie_samesite', 'Strict');  // CSRF mitigation
             session_start();
         }
 
@@ -52,11 +52,16 @@ class Session {
     }
 
     // LOGIN & LOGOUT
+    /**
+     * Summary of login
+     * @param array{id:int,name:string,email:null|string,is_admin:bool|null} $userData
+     * @return void
+     */
     public function login(array $userData) {
         session_regenerate_id(true); // prevent fixation
 
         $_SESSION['user_id'] = $userData['id'];
-        $_SESSION['username'] = $userData['name'];
+        $_SESSION['name'] = $userData['name'];
         $_SESSION['email'] = $userData['email'] ?? null;
         $_SESSION['logged_in'] = true;
         $_SESSION['login_time'] = time();

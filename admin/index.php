@@ -47,6 +47,10 @@ $currentUser = [
         </div>
         
     </header>
+    <div id="modal" class="hidden">
+    <div id="modal-body" class="modal-content"></div>
+    <span id="modal-close">&times;</span>
+</div>
 
     <!-- ================= Main Content ================= -->
     <main id="content">
@@ -54,11 +58,6 @@ $currentUser = [
        
     </main>
 
-    <!-- ================= Modals ================= -->
-    <!-- <div id="modal-root"></div> -->
-
-    <!-- ================= JS ================= -->
-<!--  -->
 <script type="module" src="js/router.js"></script>
 
 </body>

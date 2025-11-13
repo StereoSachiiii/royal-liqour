@@ -75,4 +75,31 @@ class UserModel {
     public function setIsActive($isActive) { $this->isActive = $isActive; }
     public function setIsAdmin($isAdmin) { $this->isAdmin = $isAdmin; }
     public function setIsAnonymized($isAnonymized) { $this->isAnonymized = $isAnonymized; }
+
+
+    //util
+
+    public function toArray(): array{
+
+        $user = [
+            "id" => $this->id,
+            "name" => $this->name,
+            "email" => $this->email,
+            "phone" => $this->phone,
+            "password_hash" => $this->passwordHash,
+            "profile_image_url"=> $this->profileImageUrl,
+            "is_active" => $this->isActive,
+            "is_admin" => $this->isAdmin,
+            "is_anonymized" => $this->isAnonymized,
+            "created_at" => $this->createdAt,
+            "updated_at" => $this->updatedAt,
+            "deleted_at" => $this->deletedAt,
+            "anonymized_at" => $this->anonymizedAt,
+            "last_login_at" => $this->lastLoginAt
+        ];
+
+
+        return $user;
+
+    }
 }

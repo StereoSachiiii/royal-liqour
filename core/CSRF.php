@@ -23,7 +23,12 @@ public function getToken(): string {
     return $token;
 }
 
-
+    /**
+     * Summary of validateToken
+     * returns True if the session token is valid
+     * @param string $token
+     * @return bool
+     */
     public function validateToken(string $token):bool {
         //check if $token is null 
         $currentCSRFToken = $this->getToken();

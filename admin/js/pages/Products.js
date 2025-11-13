@@ -14,8 +14,6 @@ const fetchAllProducts = async (limit = DEFAULT_LIMIT , Offset = 0)=>{
             credentials: 'include' 
         })
 
-        console.log(response);
-
          if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -77,7 +75,7 @@ export const Products = async () => {
     }
 
     return `
-         <div class="table">
+         <div class="table" style="overflow-y:auto">
             <table style="border-collapse: collapse; width: 100%; border: 1px solid #ddd;">
                 <thead>
                     <tr style="background-color: #f2f2f2;">
@@ -89,7 +87,8 @@ export const Products = async () => {
                         <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Category name</th>
                         <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Supplier name</th>
                         <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Created at</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">updated at</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Updated at</th>
+                         <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Actions </th>
                     </tr>
                 </thead>
                                 <tbody id="table-body">
@@ -106,6 +105,8 @@ export const Products = async () => {
                         <td style="border: 1px solid #ddd; padding: 8px; text-align: left;">${product.supplier_name}</td>
                         <td style="border: 1px solid #ddd; padding: 8px; text-align: left;">${product.created_at}</td>
                         <td style="border: 1px solid #ddd; padding: 8px; text-align: left;">${product.updated_at}</td>
+                        <td class="delete-btn" style="border: 1px solid #ffffffff; padding: 3px; text-align: center;">DELETE</td>
+
                     </tr>
 
 

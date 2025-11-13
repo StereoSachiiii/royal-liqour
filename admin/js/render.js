@@ -2,6 +2,8 @@
 import { Overview } from './pages/Overview.js';
 import { Users } from './pages/Users.js';
 import { Products } from './pages/Products.js';
+import { Categories } from './pages/Categories.js';
+
 
 export const render = async (path, mainElement) => {
     if (!mainElement) {
@@ -24,6 +26,10 @@ export const render = async (path, mainElement) => {
             mainElement.innerHTML = await Products();
             break;
 
+        case 'categories':
+            console.log("hlo");
+            mainElement.innerHTML = await Categories();
+            break;
         default:
             mainElement.innerHTML = Overview(); // Default to overview
             break;
