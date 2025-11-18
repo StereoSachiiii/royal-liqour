@@ -115,7 +115,7 @@ try {
                 verifyCsrf();
             }
             
-            $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $data = json_decode(file_get_contents(filename: 'php://input'), true) ?? $_POST;
             
             switch ($action) {
                 case 'register':

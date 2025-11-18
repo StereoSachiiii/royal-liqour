@@ -972,22 +972,24 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- Create Category
+-- Create Category (returns full row)
 CREATE OR REPLACE FUNCTION sp_create_category(
     p_name VARCHAR(100),
     p_description TEXT,
     p_image_url VARCHAR(500)
-) RETURNS TABLE(category_id INTEGER) AS $$
+) 
+RETURNS categories AS $$
 DECLARE
-    v_category_id INTEGER;
+    v_category categories;
 BEGIN
     INSERT INTO categories (name, description, image_url)
     VALUES (p_name, p_description, p_image_url)
-    RETURNING id INTO v_category_id;
-    
-    RETURN QUERY SELECT v_category_id;
+    RETURNING * INTO v_category;
+
+    RETURN v_category;
 END;
 $$ LANGUAGE plpgsql;
+
 
 -- Update Category
 CREATE OR REPLACE FUNCTION sp_update_category(
