@@ -1,6 +1,5 @@
-
-<style>
-.slider-container {
+<style>.slider-container {
+    margin-top: 20px;
     position: relative;
     width: 100%;
     height: 600px;
@@ -141,9 +140,7 @@
     .slide-content p {
         font-size: 1.1rem;
     }
-}
-</style>
-
+}</style>
 <div class="slider-container">
     <div class="slider-wrapper">
         <!-- Slide 1 -->

@@ -41,3 +41,23 @@ window.addEventListener('popstate', async () => {
     const mainElement = document.querySelector('#content');
     await render(window.location.pathname, mainElement);
 });
+
+
+document.addEventListener('DOMContentLoaded',()=>{
+    
+    const modal = document.getElementById('modal');
+    const modalBody = document.getElementById('modal-body');
+    const modalClose = document.getElementById('modal-close');
+
+    if (!modal || !modalClose || !modalBody) {
+        console.warn('Modal elements not found');
+        return;
+    }
+
+    // Modal close handlers
+    modalClose.addEventListener('click', () => modal.classList.remove('active'));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+    });
+
+})

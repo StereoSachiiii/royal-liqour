@@ -1,5 +1,5 @@
 const API_URL = 'http://localhost/royal-liquor/admin/api/users.php';
-const DEFAULT_LIMIT = 50;
+const DEFAULT_LIMIT = 5;
 
 let currentOffset = 0;
 
@@ -217,19 +217,13 @@ export const Users = async () => {
  */
 document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('modal');
+    
+
+
     const modalBody = document.getElementById('modal-body');
     const modalClose = document.getElementById('modal-close');
 
-    if (!modal || !modalClose || !modalBody) {
-        console.warn('Modal elements not found');
-        return;
-    }
 
-    // Modal close handlers
-    modalClose.addEventListener('click', () => modal.classList.remove('active'));
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('active');
-    });
 
     // Click delegation for all buttons
     document.addEventListener('click', async (e) => {
@@ -317,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 
             } catch (err) {
-                console.error('Error loading user details:', err);
+                
                 modalBody.innerHTML = `
                     <div style="text-align: center; padding: 20px; color: red;">
                         Failed to load user details. Please try again.
@@ -339,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Check if we got results
                 const newUsers = await fetchUsers(DEFAULT_LIMIT, currentOffset);
                 if (newUsers.length < DEFAULT_LIMIT) {
-                    button.remove(); // No more users to load
+                    button.innerText=`No more Users to load`; // No more users to load
                 } else {
                     button.disabled = false;
                     button.textContent = 'Load More Users';
@@ -347,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 button.disabled = false;
                 button.textContent = 'Load More Users';
-                alert('Failed to load more users. Please try again.');
+                
             }
         }
 
@@ -363,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const content = await Users();
                 document.querySelector('.users-table').outerHTML = content;
             } catch (error) {
-                alert('Failed to refresh users. Please try again.');
+                console.log(error);
             }
         }
     });

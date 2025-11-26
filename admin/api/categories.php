@@ -1,224 +1,141 @@
-<?php 
-
+<?php
 require_once __DIR__ . '/../controllers/CategoryController.php';
-require_once __DIR__ . '/../../core/Session.php';
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../middleware/CsrfMiddleware.php';
+require_once __DIR__ . '/../middleware/RateLimitMiddleware.php';
+require_once __DIR__ . '/../middleware/JsonMiddleware.php';
 
-// Headers
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: http://localhost'); // Adjust for your frontend
+header('Access-Control-Allow-Origin: http://localhost:3000');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 header('Access-Control-Allow-Credentials: true');
 
-// Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// Initialize session
-$session = Session::getInstance();
-
+$controller = new CategoryController();
 $method = $_SERVER['REQUEST_METHOD'];
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
-$categoryController = new CategoryController();
 
+try {
+    switch ($method) {
+        case 'GET':
+            if (!isset($_GET['id']) && !isset($_GET['name']) && !isset($_GET['slug']) && !isset($_GET['search']) && !isset($_GET['count']) && !isset($_GET['includeInactive'])) {
+                $limit = (int)($_GET['limit'] ?? 50);
+                $offset = (int)($_GET['offset'] ?? 0);
+                $result = $controller->getAll($limit, $offset);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
 
+            if (isset($_GET['includeInactive']) && $_GET['includeInactive'] === 'true') {
+                AuthMiddleware::requireAdmin();
+                $limit = (int)($_GET['limit'] ?? 50);
+                $offset = (int)($_GET['offset'] ?? 0);
+                $result = $controller->getAllIncludingInactive($limit, $offset);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
 
+            if (isset($_GET['id'])) {
+                $id = (int)$_GET['id'];
+                if ($id <= 0) throw new Exception("Category ID required", 400);
+                $result = $controller->getById($id);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
 
-/**
- * Helper function to check authentication
- * @return int User ID
- */
-function requireAuth(): int {
-    $session = Session::getInstance();
-    
-    if (!$session->isLoggedIn()) {
-        http_response_code(401);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Unauthorized - Please login',
-            'code' => 401
-        ]);
-        exit;
-    }
-    
-    return (int)$session->get('user_id');
-}
+            if (isset($_GET['name'])) {
+                $name = (string)$_GET['name'];
+                $result = $controller->getByName($name);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
 
-/**
- * Helper function to check admin role
- * @return int User ID
- */
-function requireAdmin(): int {
-    $session = Session::getInstance();
-    
-    if (!$session->isLoggedIn()) {
-        http_response_code(401);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Unauthorized - Please login',
-            'code' => 401
-        ]);
-        exit;
-    }
-    
-    if (!$session->isAdmin()) {
-        http_response_code(403);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Forbidden - Admin access required',
-            'code' => 403
-        ]);
-        exit;
-    }
-    
-    return (int)$session->get('user_id');
-}
+            // if (isset($_GET['slug'])) {
+            //     $slug = (string)$_GET['slug'];
+            //     $result = $controller->getBySlug($slug);
+            //     JsonMiddleware::sendResponse($result, $result['code']);
+            //     break;
+            // }
 
-/**
- * Helper function to send JSON response and exit
- * @param array $data Response data
- * @param int $statusCode HTTP status code
- */
-function sendResponse(array $data, int $statusCode = 200): void {
-    http_response_code($statusCode);
-    echo json_encode($data);
-    exit;
-}
+            if (isset($_GET['search'])) {
+                $query = (string)$_GET['search'];
+                $limit = (int)($_GET['limit'] ?? 50);
+                $offset = (int)($_GET['offset'] ?? 0);
+                $result = $controller->search($query, $limit, $offset);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
 
-/**
- * Verify CSRF token for state-changing operations
- */
-function verifyCsrf(): void {
-    $session = Session::getInstance();
-    $csrf = $session->getCsrfInstance();
-    
-    // Get token from header or POST data
-    $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? null;
-    
-    if (!$token || !$csrf->validateToken($token)) {
-        http_response_code(403);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Invalid CSRF token',
-            'code' => 403
-        ]);
-        exit;
-    }
-}
+            if (isset($_GET['count']) && $_GET['count'] === 'true') {
+                $includeInactive = isset($_GET['includeInactive']) && $_GET['includeInactive'] === 'true';
+                if ($includeInactive) {
+                    AuthMiddleware::requireAdmin();
+                    $result = $controller->countAll();
+                } else {
+                    $result = $controller->count();
+                }
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
 
-if($method === "GET"){
-    switch ($action) {
-        case 'getAllCategories':
-            $limit = intval($_GET['limit']) ?? 50;
-            $offset = intval($_GET['offset']) ?? 0;
-            sendResponse($categoryController->getAllCategories($limit, $offset));
-            break;  
-        
-        case 'getCategoryById':
-            $id = intval($_GET['id']);
-            sendResponse($categoryController->getCategoryById($id));
-            break;
-        
-        case 'getCategoryByName':
-            $name = strval($_GET['name']);
-            sendResponse($categoryController->getCategoryByname($name));
-            break;
-        
-        case 'getActiveCategories':
-            $limit = $_GET['limit']?? 50;
-            $offset = $_GET['offset'] ?? 0;
-            sendResponse($categoryController->getActiveCategories($limit, $offset));
-            break;  
-        
-        case 'searchCategories':
-            $limit = $_GET['limit']?? 50;
-            $offset = $_GET['offset'] ?? 0;
-            $searchTerm = $_GET['searchTerm'] ?? '';
-            sendResponse($categoryController->searchCategories($searchTerm,$limit,$offset));
-            break;
-        
-        case 'getCategoriesWithProductCount':
-            $limit = $_GET['limit']?? 50;
-            $offset = $_GET['offset'] ?? 0;
-            sendResponse($categoryController->getCategoriesWithProductCount($limit, $offset));
-            break;
-        
-        case 'getCategoryCountActive':
-            sendResponse($categoryController->getCategoryCountActive());
+            throw new Exception("Invalid GET parameters", 400);
+
+        case 'POST':
+            AuthMiddleware::requireAdmin();
+            CsrfMiddleware::verifyCsrf();
+            RateLimitMiddleware::check('category_create', 5, 60);
+
+            $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            $result = $controller->create($body);
+            JsonMiddleware::sendResponse($result, $result['code']);
             break;
 
-        case 'getCategoryCountAll':
-            sendResponse($categoryController->getCatergoryCountAll());
+        case 'PUT':
+            AuthMiddleware::requireAdmin();
+            CsrfMiddleware::verifyCsrf();
+            RateLimitMiddleware::check('category_update', 5, 60);
+
+            if (!isset($_GET['id'])) throw new Exception("Category ID required", 400);
+
+            $id = (int)$_GET['id'];
+            $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            $result = $controller->update($id, $body);
+            JsonMiddleware::sendResponse($result, $result['code']);
             break;
-        case 'categoryNameExists':
-            $name = $_GET['name'] ?? '';
-            sendResponse($categoryController->categoryNameExists($name));
+
+        case 'DELETE':
+            AuthMiddleware::requireAdmin();
+            CsrfMiddleware::verifyCsrf();
+            RateLimitMiddleware::check('category_delete', 5, 60);
+
+            if (!isset($_GET['id'])) throw new Exception("Category ID required", 400);
+
+            $id = (int)$_GET['id'];
+            $hard = isset($_GET['hard']) && $_GET['hard'] === 'true';
+
+            if ($hard) {
+                $result = $controller->hardDelete($id);
+            } else {
+                $result = $controller->delete($id);
+            }
+            JsonMiddleware::sendResponse($result, $result['code']);
             break;
 
         default:
-            
-            break;
+            throw new Exception("Method not allowed", 405);
     }
 
+} catch (Exception $e) {
+    $code = $e->getCode() ?: 500;
+    JsonMiddleware::sendResponse([
+        'success' => false,
+        'message' => $e->getMessage(),
+        'data'    => null,
+        'code'    => $code,
+        'context' => []
+    ], $code);
 }
-
-if($method === 'POST'){
-    $data = json_decode(file_get_contents(filename: 'php://input'), true) ?? $_POST;
-
-    switch($action){
-        case 'createCategory':
-            //requireAuth();
-            //requireAdmin();
-            sendResponse($categoryController->createCategory($data));
-    
-        case 'softDeleteCategory':
-            //requireAuth();
-            //requireAdmin();
-            sendResponse($categoryController->softDeleteCategory($data));   
-            break;
-
-        case 'restoreCateogry':
-            //requireAuth();
-            //requireAdmin();
-            sendResponse($categoryController->restoreCategory($data));
-            break;
-        
-        case 'updateCategory':
-            //requireAuth();
-            //requireAdmin();
-            sendResponse($categoryController->updateCategory($data));
-            break;
-
-        case 'hardDeleteCategory':
-            //requireAuth();
-            //requireAdmin();
-            sendResponse($categoryController->hardDeleteCategory($data));
-            break;
-        
-        default:
-            break;
-        }
-
-    
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-?>

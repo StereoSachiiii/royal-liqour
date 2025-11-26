@@ -60,13 +60,18 @@ class Session {
     public function login(array $userData) {
         session_regenerate_id(true); // prevent fixation
 
-        $_SESSION['user_id'] = $userData['id'];
+        $_SESSION['user_id'] = $userData['user_id'];
         $_SESSION['name'] = $userData['name'];
         $_SESSION['email'] = $userData['email'] ?? null;
         $_SESSION['logged_in'] = true;
         $_SESSION['login_time'] = time();
         $_SESSION['is_admin'] = $userData['is_admin'] ?? false;
 
+        //not to be saved to db
+        $_SESSION['session_id'] = session_id();
+     
+        
+ 
         // Optional: reset guest info
         unset($_SESSION['guest_id']);
         unset($_SESSION['is_guest']);
@@ -81,6 +86,12 @@ class Session {
         return $this->get('logged_in', false) === true;
     }
 
+    public function initRateLimit():void{
+        $window = 3;
+        $max_requests = 10;
+
+    }
+
     public function isAdmin() {
         return $this->get('is_admin', 0) == 1;
     }
@@ -90,7 +101,11 @@ class Session {
     }
 
     public function getUsername() {
-        return $this->get('username', 'Guest');
+        return $this->get('name', 'Guest');
+    }
+
+    public function getEmail():string{
+        return $this->get('email');
     }
 
 //this will return the instance csrf . which is an instanc member of session
@@ -102,6 +117,9 @@ class Session {
         return $this->csrf;
     }
 
+    public function getSessionID(){
+        return $_SESSION['session_id'];
+    }
 
     // GUEST USER INITIALIZATION
     private function initGuest() {
@@ -111,6 +129,8 @@ class Session {
             $_SESSION['username'] = 'Guest';
         }
     }
+
+    
 
     public function isGuest() {
         return $this->get('is_guest', false);

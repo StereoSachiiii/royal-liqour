@@ -125,10 +125,10 @@ function renderProductRow(product) {
             <td style="border: 1px solid #ddd; padding: 8px;">${formatDate(product.created_at)}</td>
             <td style="border: 1px solid #ddd; padding: 8px;">${product.updated_at ? formatDate(product.updated_at) : '-'}</td>
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center; display: flex; gap:5px">
-                <button class="btn-view" data-id="${product.id}" style="background-color:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px;" title="View Details">
+                <button class="btn-view-products" data-id="${product.id}" style="background-color:#007bff; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-right:4px;" title="View Details">
                     👁️ View
                 </button>
-                <a href="manage/product/edit.php?id=${product.id}" class="btn-edit" style="background-color:#28a745; color:white; text-decoration:none; padding:6px 12px; border-radius:4px; display:inline-block;" title="Edit Product">
+                <a href="manage/product/edit.php?id=${product.id}" class="btn-edit-products" style="background-color:#28a745; color:white; text-decoration:none; padding:6px 12px; border-radius:4px; display:inline-block;" title="Edit Product">
                     ✏️ Edit
                 </a>
             </td>
@@ -199,7 +199,7 @@ export const Products = async () => {
             
             ${products.length === DEFAULT_LIMIT ? `
                 <div style="margin-top: 15px; text-align: center;">
-                    <button id="load-more-btn" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    <button id="load-more-btn-products" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
                         Load More Products
                     </button>
                 </div>
@@ -216,22 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalBody = document.getElementById('modal-body');
     const modalClose = document.getElementById('modal-close');
 
-    if (!modal || !modalClose || !modalBody) {
-        console.warn('Modal elements not found');
-        return;
-    }
 
-    // Modal close handlers
-    modalClose.addEventListener('click', () => modal.classList.remove('active'));
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('active');
-    });
 
     // Click delegation for all buttons
     document.addEventListener('click', async (e) => {
         // View product details button
-        if (e.target.matches('.btn-view') || e.target.closest('.btn-view')) {
-            const button = e.target.matches('.btn-view') ? e.target : e.target.closest('.btn-view');
+        if (e.target.matches('.btn-view-products') || e.target.closest('.btn-view-products')) {
+            const button = e.target.matches('.btn-view-products') ? e.target : e.target.closest('.btn-view-products');
             const productId = button.dataset.id;
             
             if (!productId) return;
@@ -324,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Load more button
-        if (e.target.id === 'load-more-btn') {
+        if (e.target.id === 'load-more-btn-products') {
             const button = e.target;
             button.disabled = true;
             button.textContent = 'Loading...';
