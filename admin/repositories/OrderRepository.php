@@ -14,7 +14,7 @@ class OrderRepository
     {
         $this->pdo = Database::getPdo();
     }
-
+    
     public function getAll(int $limit = 50, int $offset = 0): array
     {
         $stmt = $this->pdo->prepare(
@@ -29,7 +29,8 @@ class OrderRepository
     public function getById(int $id): ?OrderModel
     {
         $stmt = $this->pdo->prepare("SELECT * FROM orders WHERE id = :id");
-        $stmt->execute([':id' => $id]);
+        $stmt->bindValue(":id",$id,PDO::PARAM_INT);
+        $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ? $this->mapToModel($row) : null;
     }
@@ -69,12 +70,13 @@ class OrderRepository
              VALUES (:cart_id, :user_id, :total_cents, :shipping_address_id, :billing_address_id, :notes) 
              RETURNING *"
         );
+        //fix later
         $stmt->execute([
             ':cart_id' => $data['cart_id'],
             ':user_id' => $data['user_id'] ?? null,
             ':total_cents' => $data['total_cents'],
-            ':shipping_address_id' => $data['shipping_address_id'] ?? null,
-            ':billing_address_id' => $data['billing_address_id'] ?? null,
+            ':shipping_address_id' => $data['address_id'] ?? null,
+            ':billing_address_id' => $data['address_id'] ?? null,
             ':notes' => $data['notes'] ?? null
         ]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -87,7 +89,7 @@ class OrderRepository
         $sets = [];
         $params = [':id' => $id];
 
-        foreach (['status', 'notes'] as $col) {
+        foreach (['status', 'notes', 'shipping_address_id', 'billing_address_id','total_cents'] as $col) {
             if (isset($data[$col])) {
                 $sets[] = "$col = :$col";
                 $params[":$col"] = $data[$col];

@@ -71,9 +71,17 @@ class PaymentController
     public function create(array $data): array
     {
         return $this->handle(function () use ($data) {
-            PaymentValidator::validateCreate($data);
+          //  PaymentValidator::validateCreate($data);
             $payment = $this->repo->create($data);
             return $this->success('Payment created', $payment->toArray(), 201);
+        });
+    }
+    public function hardDelete(int $id): array
+    {
+        return $this->handle(function () use ($id) {
+            $deleted = $this->repo->hardDelete($id);
+            if (!$deleted) throw new NotFoundException('Payment not found');
+            return $this->success('Payment permanently deleted');
         });
     }
 

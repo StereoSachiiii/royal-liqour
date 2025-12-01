@@ -14,7 +14,142 @@ class StockRepository
     {
         $this->pdo = Database::getPdo();
     }
+    // Add to StockRepository class:
 
+public function reserveStock(int $orderId): void
+{
+    try {
+        $this->pdo->beginTransaction();
+        
+        // Get order items
+        $itemsStmt = $this->pdo->prepare(
+            "SELECT product_id, quantity FROM order_items WHERE order_id = :order_id"
+        );
+        $itemsStmt->execute([':order_id' => $orderId]);
+        $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($items as $item) {
+            // Find warehouse with available stock
+            $stockStmt = $this->pdo->prepare(
+                "SELECT id, warehouse_id FROM stock 
+                 WHERE product_id = :product_id 
+                 AND (quantity - reserved) >= :quantity
+                 ORDER BY (quantity - reserved) DESC
+                 LIMIT 1
+                 FOR UPDATE"
+            );
+            $stockStmt->execute([
+                ':product_id' => $item['product_id'],
+                ':quantity' => $item['quantity']
+            ]);
+            $stock = $stockStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$stock) {
+                throw new DatabaseException("Insufficient stock for product {$item['product_id']}");
+            }
+            
+            // Reserve the stock
+            $reserveStmt = $this->pdo->prepare(
+                "UPDATE stock SET reserved = reserved + :quantity, updated_at = NOW()
+                 WHERE id = :stock_id"
+            );
+            $reserveStmt->execute([
+                ':quantity' => $item['quantity'],
+                ':stock_id' => $stock['id']
+            ]);
+            
+            // Update order_item with warehouse_id
+            $updateItemStmt = $this->pdo->prepare(
+                "UPDATE order_items SET warehouse_id = :warehouse_id
+                 WHERE order_id = :order_id AND product_id = :product_id"
+            );
+            $updateItemStmt->execute([
+                ':warehouse_id' => $stock['warehouse_id'],
+                ':order_id' => $orderId,
+                ':product_id' => $item['product_id']
+            ]);
+        }
+        
+        $this->pdo->commit();
+        
+    } catch (Exception $e) {
+        $this->pdo->rollBack();
+        throw $e;
+    }
+}
+
+public function confirmPayment(int $orderId): void
+{
+    try {
+        $this->pdo->beginTransaction();
+        
+        $stmt = $this->pdo->prepare(
+            "UPDATE stock s
+             SET quantity = quantity - oi.quantity,
+                 reserved = reserved - oi.quantity,
+                 updated_at = NOW()
+             FROM order_items oi
+             WHERE oi.order_id = :order_id
+             AND s.product_id = oi.product_id
+             AND s.warehouse_id = oi.warehouse_id"
+        );
+        $stmt->execute([':order_id' => $orderId]);
+        
+        $this->pdo->commit();
+        
+    } catch (Exception $e) {
+        $this->pdo->rollBack();
+        throw $e;
+    }
+}
+
+public function cancelOrder(int $orderId): void
+{
+    try {
+        $this->pdo->beginTransaction();
+        
+        $stmt = $this->pdo->prepare(
+            "UPDATE stock s
+             SET reserved = reserved - oi.quantity,
+                 updated_at = NOW()
+             FROM order_items oi
+             WHERE oi.order_id = :order_id
+             AND s.product_id = oi.product_id
+             AND s.warehouse_id = oi.warehouse_id"
+        );
+        $stmt->execute([':order_id' => $orderId]);
+        
+        $this->pdo->commit();
+        
+    } catch (Exception $e) {
+        $this->pdo->rollBack();
+        throw $e;
+    }
+}
+
+public function refundOrder(int $orderId): void
+{
+    try {
+        $this->pdo->beginTransaction();
+        
+        $stmt = $this->pdo->prepare(
+            "UPDATE stock s
+             SET quantity = quantity + oi.quantity,
+                 updated_at = NOW()
+             FROM order_items oi
+             WHERE oi.order_id = :order_id
+             AND s.product_id = oi.product_id
+             AND s.warehouse_id = oi.warehouse_id"
+        );
+        $stmt->execute([':order_id' => $orderId]);
+        
+        $this->pdo->commit();
+        
+    } catch (Exception $e) {
+        $this->pdo->rollBack();
+        throw $e;
+    }
+}
     public function getAll(int $limit = 50, int $offset = 0): array
     {
         $stmt = $this->pdo->prepare(
@@ -148,6 +283,16 @@ class StockRepository
         return $stmt->rowCount() > 0;
     }
 
+    public function getAvailableStockByProduct(int $productId): int
+{
+    $stmt = $this->pdo->prepare(
+        "SELECT COALESCE(SUM(quantity - reserved), 0) as available 
+         FROM stock 
+         WHERE product_id = :product_id"
+    );
+    $stmt->execute([':product_id' => $productId]);
+    return (int)$stmt->fetchColumn();
+}
     private function mapToModel(array $row): StockModel
     {
         return new StockModel(

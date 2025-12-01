@@ -125,6 +125,9 @@ class OrderController
     {
         return $this->handle(function () use ($id, $data) {
             OrderValidator::validateUpdate($data);
+            if(!$this->repo->getById($id)) {
+                throw new NotFoundException('Order not found');
+            }
             $updated = $this->repo->update($id, $data);
             if (!$updated) throw new NotFoundException('Order not found');
             return $this->success('Order updated', $updated->toArray());

@@ -58,6 +58,15 @@ class SupplierController
         ];
     }
 
+    private function getByEmail($data): array
+    {
+        return $this->handle(function () use ($data) {
+            $supplier = $this->repo->getByEmail($data['email']);
+            if (!$supplier) throw new NotFoundException('Supplier not found');
+            return $this->success('Supplier retrieved', $supplier->toArray());
+        });
+    }
+
     private function handle(callable $callback): array
     {
         try {
@@ -76,6 +85,10 @@ class SupplierController
 
             if ($this->repo->getByName($data['name'])) {
                 throw new DuplicateException('Supplier name already exists');
+            }
+
+            if ($this->repo->getByEmail($data['email'])) {
+                throw new DuplicateException('Supplier email already exists');
             }
 
             $supplier = $this->repo->create($data);
@@ -128,15 +141,19 @@ class SupplierController
         });
     }
 
-    public function search(string $query, int $limit = 50, int $offset = 0): array
-    {
-        return $this->handle(function () use ($query, $limit, $offset) {
-            if (empty(trim($query))) throw new ValidationException('Search query required');
-            $suppliers = $this->repo->search($query, $limit, $offset);
-            $data = array_map(fn($s) => $s->toArray(), $suppliers);
-            return $this->success('Search results', $data);
-        });
-    }
+public function search(string $query, int $limit = 50, int $offset = 0): array
+{
+    return $this->handle(function () use ($query, $limit, $offset) {
+        if (empty(trim($query))) {
+            return $this->getAll($limit, $offset); 
+        }
+        
+        
+        $suppliers = $this->repo->search($query, $limit, $offset);
+        $data = array_map(fn($s) => $s->toArray(), $suppliers);
+        return $this->success('Search results', $data);
+    });
+}
 
     public function count(): array
     {

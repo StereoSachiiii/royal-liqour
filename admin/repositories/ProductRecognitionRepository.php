@@ -39,6 +39,66 @@ class ProductRecognitionRepository {
         return array_map(fn(array $row) => $this->mapRowToProductRecognition($row), $rows);
     }
 
+    public function update(int $id, array $data): ProductRecognition {
+    $fields = [];
+    $params = [':id' => $id];
+
+    if (isset($data['user_id'])) {
+        $fields[] = "user_id = :user_id";
+        $params[':user_id'] = $data['user_id'];
+    }
+    if (isset($data['session_id'])) {
+        $fields[] = "session_id = :session_id";
+        $params[':session_id'] = $data['session_id'];
+    }
+    if (isset($data['image_url'])) {
+        $fields[] = "image_url = :image_url";
+        $params[':image_url'] = $data['image_url'];
+    }
+    if (array_key_exists('recognized_text', $data)) { // allow null
+        $fields[] = "recognized_text = :recognized_text";
+        $params[':recognized_text'] = $data['recognized_text'];
+    }
+    if (array_key_exists('recognized_labels', $data)) {
+        $recognizedLabels = $data['recognized_labels'] ? '{' . implode(',', $data['recognized_labels']) . '}' : null;
+        $fields[] = "recognized_labels = :recognized_labels";
+        $params[':recognized_labels'] = $recognizedLabels;
+    }
+    if (array_key_exists('matched_product_id', $data)) {
+        $fields[] = "matched_product_id = :matched_product_id";
+        $params[':matched_product_id'] = $data['matched_product_id'];
+    }
+    if (array_key_exists('confidence_score', $data)) {
+        $fields[] = "confidence_score = :confidence_score";
+        $params[':confidence_score'] = $data['confidence_score'];
+    }
+    if (array_key_exists('api_provider', $data)) {
+        $fields[] = "api_provider = :api_provider";
+        $params[':api_provider'] = $data['api_provider'];
+    }
+
+    if (empty($fields)) {
+        throw new InvalidArgumentException("No data provided to update.");
+    }
+
+    $sql = "UPDATE product_recognition SET " . implode(', ', $fields) . " WHERE id = :id RETURNING *";
+    $stmt = $this->pdo->prepare($sql);
+
+    foreach ($params as $key => $value) {
+        $type = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
+        $stmt->bindValue($key, $value, $type);
+    }
+
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$row) {
+        throw new DatabaseException("Failed to update product recognition with ID $id.");
+    }
+
+    return $this->mapRowToProductRecognition($row);
+}
+
     public function create(array $data): ProductRecognition {
         $recognizedLabels = isset($data['recognized_labels']) ? '{' . implode(',', $data['recognized_labels']) . '}' : null;
         

@@ -1,0 +1,273 @@
+/* ============================================
+   USERS TABLE & CONTAINER
+   ============================================ */
+.users_table {
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    color: #212529;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.users_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.users_header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.users_header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.users_search-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 220px;
+    font-size: 13px;
+}
+
+.users_btn-refresh {
+    padding: 8px 14px;
+    background: var(--muted);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.users_btn-refresh:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.users_btn-refresh:hover:not(:disabled) {
+    background: #5a6268;
+}
+
+/* ============================================
+   TABLE & ROWS
+   ============================================ */
+.users_wrapper {
+    overflow-x: auto;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+.users_data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--table-font-size);
+}
+
+.users_header-row th {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    font-weight: 700;
+    font-size: 13px;
+    color: #333;
+}
+
+.users_row:hover {
+    background: #fbfcfd;
+}
+
+.users_cell {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #333;
+    vertical-align: middle;
+}
+
+.users_cell.users_actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.users_cell.users_total {
+    font-weight: 700;
+    color: var(--success);
+}
+
+/* ============================================
+   BADGES & STATUS
+   ============================================ */
+.users_badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.users_status_pending { background: #fff3cd; color: #856404; }
+.users_status_paid { background: #d1e7dd; color: #0f5132; }
+.users_status_processing { background: #cfe2ff; color: #084298; }
+.users_status_shipped { background: #cfe2ff; color: #084298; }
+.users_status_delivered { background: #d1e7dd; color: #0f5132; }
+.users_status_cancelled,
+.users_status_refunded,
+.users_status_failed { background: #f8d7da; color: #842029; }
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
+.users_btn-view {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.users_btn-view:hover { background: var(--accent-strong); }
+
+.users_btn-edit {
+    background: #28a745;
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.users_btn-edit:hover { background: #218838; }
+
+/* ============================================
+   MODAL / USER CARD
+   ============================================ */
+.users_card {
+    background: var(--bg);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    height: 90vh;
+    width: 90vh;
+    overflow: hidden;
+    padding: 16px;
+}
+
+.users_card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.users_close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #666;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.users_close-btn:hover { background: #f1f3f5; color: #000; }
+
+/* ============================================
+   DATA GRID
+   ============================================ */
+.users_data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0;
+    padding: 0 20px 18px;
+}
+
+.users_field {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.users_label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.users_value {
+    font-size: 14px;
+    color: #212529;
+    word-break: break-word;
+    line-height: 1.5;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.users_footer {
+    padding: 16px 20px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    margin-top: auto;
+}
+
+.users_btn-primary {
+    padding: 10px 18px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.users_btn-primary:hover { background: var(--accent-strong); }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 900px) {
+    .users_data-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .users_item-row { grid-template-columns: 1fr 90px; }
+}
+
+@media (max-width: 768px) {
+    .users_data-grid { grid-template-columns: 1fr; }
+    .users_card-header { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+    .users_card-header { padding: 14px 16px; }
+    .users_data-grid { padding: 0 16px 16px; }
+    .users_footer { padding: 12px 16px; }
+    .users_btn-primary { width: 100%; }
+}

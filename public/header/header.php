@@ -21,8 +21,10 @@ $username=$session->getUsername();
     <link rel="stylesheet" href="<?= BASE_URL ?>css/categories.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>css/cart.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>css/account.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/history.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/orders.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>css/wishlist.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/details.css">
+
   </head>
 <body>
   
@@ -55,8 +57,8 @@ $username=$session->getUsername();
       <h2>Royal Liquor</h2>
   </div>
   <div id="right-panel">
-
-    <div id="cart">
+  <a href="<?= BASE_URL ?>cart.php">
+ <div id="cart">
       <div class="count-display"></div>
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cart" viewBox="0 0 16 16">
       <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l1.313 7h8.17l1.313-7zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4m-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
@@ -96,6 +98,8 @@ $username=$session->getUsername();
       </svg>
       
   </div>
+  </a>
+   
 
     
 <div id="profile">

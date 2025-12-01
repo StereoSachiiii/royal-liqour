@@ -1,70 +1,78 @@
 <?php
 require_once __DIR__ . '/../controllers/CocktailRecipeController.php';
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../middleware/CsrfMiddleware.php';
 require_once __DIR__ . '/../middleware/RateLimitMiddleware.php';
 require_once __DIR__ . '/../middleware/JsonMiddleware.php';
 
-$method = $_SERVER['REQUEST_METHOD'];
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: http://localhost:3000');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
+header('Access-Control-Allow-Credentials: true');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 $controller = new CocktailRecipeController();
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Pure JSON input — this is what you actually use
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
 
 try {
     switch ($method) {
         case 'GET':
             if (isset($_GET['id'])) {
-                RateLimitMiddleware::check('cocktail_getById', 10, 60);
                 $result = $controller->getById((int)$_GET['id']);
-                JsonMiddleware::sendResponse($result, 200);
-                break;
+            } elseif (isset($_GET['count'])) {
+                AuthMiddleware::requireAdmin();
+                $result = $controller->count();
+            } else {
+                AuthMiddleware::requireAdmin();
+                $limit = (int)($_GET['limit'] ?? 50);
+                $offset = (int)($_GET['offset'] ?? 0);
+                $result = $controller->getAll($limit, $offset);
             }
-            if (isset($_GET['difficulty'])) {
-                RateLimitMiddleware::check('cocktail_getByDifficulty', 10, 60);
-                $result = $controller->getByDifficulty($_GET['difficulty']);
-                JsonMiddleware::sendResponse($result, 200);
-                break;
-            }
-            if (isset($_GET['search'])) {
-                RateLimitMiddleware::check('cocktail_search', 10, 60);
-                $result = $controller->searchByName($_GET['search']);
-                JsonMiddleware::sendResponse($result, 200);
-                break;
-            }
-            if (isset($_GET['limit']) && isset($_GET['offset'])) {
-                RateLimitMiddleware::check('cocktail_getAllPaginated', 5, 60);
-                $result = $controller->getAllPaginated((int)$_GET['limit'], (int)$_GET['offset']);
-                JsonMiddleware::sendResponse($result, 200);
-                break;
-            }
-            RateLimitMiddleware::check('cocktail_getAll', 5, 60);
-            $result = $controller->getAll();
-            JsonMiddleware::sendResponse($result, 200);
             break;
 
         case 'POST':
-            RateLimitMiddleware::check('cocktail_create', 5, 60);
-            $body = json_decode(file_get_contents('php://input'), true);
-            $result = $controller->create($body);
-            JsonMiddleware::sendResponse($result, 201);
+            AuthMiddleware::requireAdmin();
+            CsrfMiddleware::verifyCsrf();
+            RateLimitMiddleware::check('cocktail_create', 10, 60);
+            $result = $controller->create($input);
             break;
 
         case 'PUT':
-            if (!isset($_GET['id'])) throw new Exception("ID required for update", 400);
-            RateLimitMiddleware::check('cocktail_update', 10, 60);
-            $body = json_decode(file_get_contents('php://input'), true);
-            $result = $controller->update((int)$_GET['id'], $body);
-            JsonMiddleware::sendResponse($result, 200);
+            AuthMiddleware::requireAdmin();
+            CsrfMiddleware::verifyCsrf();
+            if (!isset($_GET['id']) && !isset($input['id']) ) throw new Exception("ID required", 400);
+            $id =  $_GET['id'] ?? $input['id'];
+            $result = $controller->update(intval($id), $input);
             break;
 
         case 'DELETE':
-            if (!isset($_GET['id'])) throw new Exception("ID required for delete", 400);
-            RateLimitMiddleware::check('cocktail_delete', 5, 60);
-            $result = $controller->delete((int)$_GET['id']);
-            JsonMiddleware::sendResponse($result, 200);
+            AuthMiddleware::requireAdmin();
+            CsrfMiddleware::verifyCsrf();
+            if (!isset($_GET['id'])) throw new Exception("ID required", 400);
+            $hard = !empty($_GET['hard']);
+            $result = $controller->delete((int)$_GET['id'], $hard);
             break;
 
         default:
             throw new Exception("Method not allowed", 405);
     }
-} catch (Exception $e) {
-    JsonMiddleware::sendResponse(['success' => false, 'message' => $e->getMessage(), 'code' => $e->getCode() ?: 500], $e->getCode() ?: 500);
-}
 
-?>
+    JsonMiddleware::sendResponse($result, $result['code'] ?? 200);
+
+} catch (Throwable $e) {
+    $code = $e->getCode() && $e->getCode() >= 100 ? $e->getCode() : 500;
+    JsonMiddleware::sendResponse([
+        'success' => false,
+        'message' => $e->getMessage(),
+        'data' => null,
+        'code' => $code
+    ], $code);
+}

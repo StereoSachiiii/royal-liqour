@@ -1,3 +1,5 @@
+const API_BASE = `http://localhost/royal-liquor/admin/api/`;
+
 export const fetchCartItems = async (id) =>{
     try {
         const response = await fetch(`http://localhost/royal-liquor/admin/api/products.php?id=${id}`,{
@@ -13,8 +15,7 @@ export const fetchCartItems = async (id) =>{
         }
         const body = await response.json() 
         
-        return body.data
-        ;
+        return body.data;
     }catch(error){
         return{error:error}
     }
@@ -22,29 +23,33 @@ export const fetchCartItems = async (id) =>{
 
 
 const addToCart = async (id, quantity = 1, prevCartJson) => {
-    let prevCart = []
-    try{
-        prevCart = prevCartJson ? JSON.parse(prevCartJson) : []
-    }catch(error){
-        prevCart = []
+    let prevCart = [];
+
+    try {
+        prevCart = prevCartJson ? JSON.parse(prevCartJson) : [];
+    } catch (error) {
+        prevCart = [];
     }
+
+    id = Number(id); 
+
     const newItem = await fetchCartItems(id);
 
-    const existingIndex = prevCart.findIndex((item)=>(item.id === id)) 
-    
-    if(existingIndex !== -1){
-        const newCart = prevCart.map((item, index)=>(
-            index === existingIndex ? {...item,quantity:item.quantity + quantity} : item
-        ))
-        return newCart      
+    const existingIndex = prevCart.findIndex(item => Number(item.id) === id);
+
+    if (existingIndex !== -1) {
+        prevCart[existingIndex].quantity += Number(quantity);
+        return [...prevCart];
     }
-    
-    if(newItem){
-        newItem.quantity = quantity 
-        return [...prevCart,newItem]
+
+    if (newItem) {
+        newItem.quantity = Number(quantity);
+        return [...prevCart, newItem];
     }
-    
-}
+
+    return prevCart;
+};
+
 
 const updateCartQuantity = (id, newQuantity, prevCartJson) => {
     let prevCart = []
@@ -87,7 +92,8 @@ export const cartUpdateItemQuantity = (id, quantity) => {
 
 export const getCartCount = () => {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
-    return cart.reduce((sum,currentVal)=>(sum+currentVal.quantity),0)
+    const count = cart.reduce((sum,currentVal)=>(sum+currentVal.quantity),0)
+    return  count>0 ? count : ''
         
 }
 
@@ -100,20 +106,16 @@ export const removeCart = () => {
     
 }
 
-export const parseCart = async (cart_id) => {
-    const cart = await getCart();
-    return {
-        cart_id:cart_id,
-        is_active:true,
-        cart_items:cart.map((cartItem)=>({
-            product_id:cartItem.id,
-            quantity:cartItem.quantity,
-            price_at_add:cartItem.price
-        }))
-    }
+
+export const parseCart = (cart) => {
+    return cart.map((cartItem)=>({
+        product_id: cartItem.id,
+        quantity: cartItem.quantity,
+        price_at_add_cents: cartItem.price  
+    }));
 }
 
-export const saveCartToDB = async (user_id, session_id, total) => {
+export const saveCartToDB = async (user_id, session_id) => {
     try{
         const response = await fetch(`http://localhost/royal-liquor/admin/api/cart.php`,{
             method:'POST',
@@ -121,15 +123,14 @@ export const saveCartToDB = async (user_id, session_id, total) => {
                 'Content-Type':'application/json'
             },
             body:JSON.stringify({
-                user_id:user_id,
-                session_id:session_id,
-                total:total
+                user_id: user_id,
+                session_id: session_id
             }),
             credentials:'same-origin'
         })
 
         if(!response.ok){
-            throw Error(`Error saving the card record to db ${response.statusText}`);
+            throw Error(`Error saving the cart record to db ${response.statusText}`);
         }
         const body = await response.json()
         return body.data
@@ -137,36 +138,71 @@ export const saveCartToDB = async (user_id, session_id, total) => {
     }catch(error){
         return {error:error}
     }
-
 }
 
-export const saveCartItems = async (parsedCart) =>{
+export const saveCartItems = async (cart_id, cartItems) =>{
     try{
-        const response = await fetch(`http://localhost/royal-liquor/admin/api/cart-items.php`,{
-            method:'POST',
-            headers:{
-                'Content-Type':'application/json'
-            },
-            body:JSON.stringify(parsedCart),
-            credentials:'same-origin'
-        })
+        const promises = cartItems.map(item =>
+            fetch(`http://localhost/royal-liquor/admin/api/cart-items.php`,{
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({
+                    cart_id: cart_id,
+                    product_id: item.product_id,
+                    quantity: item.quantity,
+                    price_at_add_cents: item.price_at_add_cents
+                }),
+                credentials:'same-origin'
+            })
+        );
+
+        const responses = await Promise.all(promises);
+        
+        // Check if all requests succeeded
+        for(let response of responses) {
+            if(!response.ok){
+                throw Error(`Error saving cart item: ${response.statusText}`);
+            }
+        }
+        
+        // Parse all responses
+        const results = await Promise.all(responses.map(r => r.json()));
+        return results.map(r => r.data);
+
+    }catch(error){
+        return {error:error}
+    }
+}
+
+// FIX 5: Updated to match new function signatures
+export const saveCart = async (user_id, session_id) => {
+    const cart = await saveCartToDB(user_id, session_id)
+    
+    if(cart.error) {
+        return cart; 
+    }
+    
+    const localCart = getCart();
+    const parsedCart = parseCart(localCart);
+    
+    return saveCartItems(cart.id, parsedCart)
+}
+
+
+export const fetchAddresses = async (id ) => {
+
+    try{
+        const response = await fetch(`${API_BASE}/addresses.php?user_id=${id}`)
 
         if(!response.ok){
-            throw Error(`Error saving the card record to db ${response.statusText}`);
+            throw Error(`Error fetching user Addresses`);
         }
         const body = await response.json()
+
         return body.data
-
     }catch(error){
-        return {error:error}
+        return{error:error}
     }
-
-}
-
-export const saveCart = async (user_id, session_id, total) => {
-    const cart = await saveCartToDB(user_id, session_id, total)
-    
-    const parsedCart = await parseCart(cart.id)
-    
-    return saveCartItems(parsedCart)
 }

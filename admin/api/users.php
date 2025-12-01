@@ -24,13 +24,10 @@ $method     = $_SERVER['REQUEST_METHOD'];
 try {
     switch ($method) {
 
-        // ====================================================================
-        // PUBLIC: Register & Login
-        // ====================================================================
+
         case 'POST':
             $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
-            // Extract action from JSON body (recommended) or fallback to GET/POST
             $action = $body['action'] ?? ($_GET['action'] ?? ($_POST['action'] ?? ''));
 
             switch ($action) {
@@ -46,7 +43,6 @@ try {
                     JsonMiddleware::sendResponse($result, $result['code'] ?? 401);
                     break;
 
-                // All other POST actions require auth + CSRF
                 default:
                     AuthMiddleware::requireAuth();
                     CsrfMiddleware::verifyCsrf();
@@ -62,7 +58,7 @@ try {
                             break;
 
                         case 'updateProfile':
-                            $userId = AuthMiddleware::requireAuth();
+                            $userId = (int)($_GET['id'] ?? $body['id'] ?? null);
                             $result = $controller->updateProfile($userId, $body);
                             JsonMiddleware::sendResponse($result, $result['code'] ?? 400);
                             break;
@@ -123,9 +119,16 @@ try {
                 break;
             }
 
+            
             // All other GETs require login
             $userId = AuthMiddleware::requireAuth();
-            RateLimitMiddleware::check('user_get', 60, 60);
+            RateLimitMiddleware::check('users_get', 60, 60);
+            if(!isset($_GET['profile']) && !isset($_GET['addresses']) && !isset($_GET['admin_users'])&&!isset($_GET['search'])) {
+                $limit = $_GET['limit'] ?? 10;
+                $offset = $_GET['offset'] ?? 0;
+                $result = $controller->getAllUsers((int)$limit, (int)$offset);
+                JsonMiddleware::sendResponse($result, $result['code'] ?? 400);
+            }
 
             if (isset($_GET['profile'])) {
                 $result = $controller->getProfile($userId);
@@ -145,6 +148,14 @@ try {
                 $result = $controller->getAllUsers($limit, $offset);
                 JsonMiddleware::sendResponse($result, 200);
             }
+            elseif (isset($_GET['search'])) {
+          //  AuthMiddleware::requireAdmin();
+            $query = $_GET['search'] ?? '';
+            $limit = $_GET['limit'] ?? 50;
+            $offset = $_GET['offset'] ?? 0;
+            $result = $controller->searchUsers($query, (int)$limit, (int)$offset);
+            JsonMiddleware::sendResponse($result, $result['code'] ?? 400);
+        }
 
             else {
                 JsonMiddleware::sendResponse([

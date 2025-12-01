@@ -1,239 +1,52 @@
 Folder PATH listing
 Volume serial number is DA73-996F
 C:.
-|   .env
-|   .gitattributes
-|   .gitignore
-|   .htaccess
-|   globals.css
-|   index.php
-|   init.php
-|   project_structure.txt
-|   README.md
-|   schema.sql
-|   test.php
-|   testproducts.php
-|   
++---.vscode
 +---admin
-|   |   index.php
-|   |   info.php
-|   |   
-|   +---api
-|   |       addresses.php
-|   |       auth.php
-|   |       categories.php
-|   |       dashboard.php
-|   |       index.php
-|   |       orders.php
-|   |       products.php
-|   |       reports.php
-|   |       settings.php
-|   |       stock.php
-|   |       suppliers.php
-|   |       users.php
-|   |       warehouses.php
-|   |       
-|   +---controllers
-|   |       AddressController.php
-|   |       AuthController.php
-|   |       BaseController.php
-|   |       CategoryController.php
-|   |       DashboardController.php
-|   |       OrderController.php
-|   |       ProductController.php
-|   |       ReportController.php
-|   |       SettingsController.php
-|   |       StockController.php
-|   |       SupplierController.php
-|   |       UserController.php
-|   |       WarehouseController.php
-|   |       
-|   +---css
-|   |       index.css
-|   |       
-|   +---events
-|   |   |   EventDispatcher.php
-|   |   |   
-|   |   \---listeners
-|   |           AuditLogListener.php
-|   |           OrderCreatedListener.php
-|   |           OrderStatusChangedListener.php
-|   |           ProductCreatedListener.php
-|   |           StockLowListener.php
-|   |           UserLoggedInListener.php
-|   |           UserRegisteredListener.php
-|   |           
-|   +---exceptions
-|   |       AuthException.php
-|   |       BaseException.php
-|   |       DatabaseException.php
-|   |       InsufficientStockException.php
-|   |       NotFoundException.php
-|   |       UnauthorizedException.php
-|   |       ValidationException.php
-|   |       
-|   +---js
-|   |   |   app.js
-|   |   |   index.js
-|   |   |   render.js
-|   |   |   router.js
-|   |   |   store.js
-|   |   |   
-|   |   +---components
-|   |   |       breadcrumb.js
-|   |   |       Modal.js
-|   |   |       Table.js
-|   |   |       
-|   |   \---pages
-|   |           Orders.js
-|   |           Overview.js
-|   |           Products.js
-|   |           Stock.js
-|   |           Table.js
-|   |           Users.js
-|   |           
-|   +---middleware
-|   |       AuthMiddleware.php
-|   |       CorsMiddleware.php
-|   |       CSRFMiddleware.php
-|   |       JsonMiddleware.php
-|   |       RateLimitMiddleware.php
-|   |       
-|   +---models
-|   |       Address.php
-|   |       AuditLog.php
-|   |       BaseModel.php
-|   |       Category.php
-|   |       Order.php
-|   |       OrderItem.php
-|   |       ProductModel.php
-|   |       Stock.php
-|   |       Supplier.php
-|   |       User.php
-|   |       Warehouse.php
-|   |       
-|   +---repositories
-|   |       AddressRepository.php
-|   |       BaseRepository.php
-|   |       CategoryRepository.php
-|   |       OrderRepository.php
-|   |       ProductRepository.php
-|   |       ReportRepository.php
-|   |       StockRepository.php
-|   |       SupplierRepository.php
-|   |       UserRepository.php
-|   |       WarehouseRepository.php
-|   |       
-|   +---services
-|   |   |   AddressService.php
-|   |   |   AuditService.php
-|   |   |   EmailService.php
-|   |   |   NotificationService.php
-|   |   |   ReportService.php
-|   |   |   SecurityService.php
-|   |   |   SupplierService.php
-|   |   |   ValidationService.php
-|   |   |   WarehouseService.php
-|   |   |   
-|   |   +---Auth
-|   |   |       AuthService.php
-|   |   |       AuthStrategy.php
-|   |   |       EmailAuthStrategy.php
-|   |   |       TokenAuthStrategy.php
-|   |   |       
-|   |   +---Order
-|   |   |       OrderFactory.php
-|   |   |       OrderService.php
-|   |   |       
-|   |   +---Product
-|   |   |       ProductFactory.php
-|   |   |       ProductService.php
-|   |   |       
-|   |   +---Stock
-|   |   |       StockService.php
-|   |   |       
-|   |   \---User
-|   |           UserFactory.php
-|   |           UserService.php
-|   |           
-|   \---validators
-|           AddressValidator.php
-|           AuthValidator.php
-|           CategoryValidator.php
-|           OrderValidator.php
-|           ProductValidator.php
-|           StockValidator.php
-|           SupplierValidator.php
-|           UserValidator.php
-|           WarehouseValidator.php
-|           
+�   +---api
+�   +---controllers
+�   +---css
+�   +---events
+�   �   +---listeners
+�   +---exceptions
+�   +---js
+�   �   +---components
+�   �   +---pages
+�   +---manage
+�   �   +---user
+�   +---middleware
+�   +---models
+�   +---repositories
+�   +---services
+�   �   +---Auth
+�   �   +---Cart
+�   �   +---Category
+�   �   +---Order
+�   �   +---Product
+�   �   +---Stock
+�   �   +---User
+�   +---validators
 +---config
-|       constants.php
-|       
 +---core
-|       ApiRouter.php
-|       Application.php
-|       Cache.php
-|       Container.php
-|       CSRF.php
-|       Database.php
-|       Logger.php
-|       Paginator.php
-|       QueryBuilder.php
-|       Request.php
-|       Response.php
-|       Router.php
-|       Session.php
-|       
 +---logs
-|       access.log
-|       api.log
-|       audit.log
-|       error.log
-|       stock.log
-|       
 +---public
-|   |   account.php
-|   |   cart.php
-|   |   index.php
-|   |   products.php
-|   |   welcome.php
-|   |   wishlist.php
-|   |   
-|   +---.vscode
-|   |       settings.json
-|   |       
-|   +---auth
-|   |       auth-handler.php
-|   |       auth.php
-|   |       
-|   +---css
-|   |       auth.css
-|   |       footer.css
-|   |       header.css
-|   |       popup.css
-|   |       
-|   +---footer
-|   |       footer.php
-|   |       
-|   \---header
-|           header.js
-|           header.php
-|           
-\---storage
+�   +---.vscode
+�   +---auth
+�   +---components
+�   +---css
+�   +---footer
+�   +---header
+�   +---myaccount
+�   �   +---notifications
+�   �   +---orders
+�   �   +---wishlist
+�   +---utils
++---storage
     +---cache
-    |       .gitkeep
-    |       
-    \---uploads
+    +---cart
+    +---defaults
+    +---uploads
         +---categories
-        |       .gitkeep
-        |       
         +---documents
-        |       .gitkeep
-        |       
         +---products
-        |       .gitkeep
-        |       
-        \---users
-                .gitkeep
-                
+        +---users

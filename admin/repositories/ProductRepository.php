@@ -101,19 +101,20 @@ class ProductRepository
     public function create(array $data): ProductModel
     {
         $stmt = $this->pdo->prepare(
-            "INSERT INTO products (name, slug, description, price_cents, image_url, category_id, supplier_id) 
-             VALUES (:name, :slug, :description, :price_cents, :image_url, :category_id, :supplier_id) 
+            "INSERT INTO products (name, slug, description, price_cents, image_url, category_id, supplier_id, is_active) 
+             VALUES (:name, :slug, :description, :price_cents, :image_url, :category_id, :supplier_id, :is_active) 
              RETURNING *"
         );
-        $stmt->execute([
-            ':name' => $data['name'],
-            ':slug' => $data['slug'] ?? null,
-            ':description' => $data['description'] ?? null,
-            ':price_cents' => $data['price_cents'],
-            ':image_url' => $data['image_url'] ?? null,
-            ':category_id' => $data['category_id'],
-            ':supplier_id' => $data['supplier_id'] ?? null
-        ]);
+        $stmt->bindValue(':name', $data['name'], PDO::PARAM_STR);
+        $stmt->bindValue(':slug', $data['slug'] ?? null, PDO::PARAM_STR);
+        $stmt->bindValue(':description', $data['description'] ?? null, PDO::PARAM_STR);
+        $stmt->bindValue(':image_url', $data['image_url'] ?? null, PDO::PARAM_STR);
+        $stmt->bindValue(':category_id', $data['category_id'], PDO::PARAM_INT); 
+        $stmt->bindValue(':supplier_id', $data['supplier_id'] ?? null, PDO::PARAM_INT);
+        $stmt->bindValue(':price_cents', $data['price_cents'], PDO::PARAM_INT);
+        $stmt->bindValue(':is_active', $data['is_active'] ?? true, PDO::PARAM_BOOL);
+
+        $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$row) throw new DatabaseException('Failed to create product');
         return $this->mapToModel($row);
@@ -124,8 +125,12 @@ class ProductRepository
         $sets = [];
         $params = [':id' => $id];
 
-        foreach (['name', 'slug', 'description', 'price_cents', 'image_url', 'category_id', 'supplier_id'] as $col) {
-            if (isset($data[$col])) {
+        foreach ([
+    'name', 'slug', 'description', 'price_cents',
+    'image_url', 'category_id', 'supplier_id', 'is_active'
+] as $col)
+ {
+            if (array_key_exists($col, $data)) {
                 $sets[] = "$col = :$col";
                 $params[":$col"] = $data[$col];
             }
@@ -134,7 +139,7 @@ class ProductRepository
         if (empty($sets)) return null;
 
         $sql = "UPDATE products SET " . implode(', ', $sets) . ", updated_at = NOW() 
-                WHERE id = :id AND deleted_at IS NULL RETURNING *";
+                WHERE id = :id RETURNING *";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -166,6 +171,17 @@ class ProductRepository
         $stmt = $this->pdo->prepare("DELETE FROM products WHERE id = :id");
         $stmt->execute([':id' => $id]);
         return $stmt->rowCount() > 0;
+    }
+
+    public function getByName(string $data): ?ProductModel
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM products WHERE name = :name AND is_active = TRUE AND deleted_at IS NULL"
+        );
+        $stmt->bindValue(':name', $data, PDO::PARAM_STR);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? $this->mapToModel($row) : null;
     }
 
     private function mapToModel(array $row): ProductModel

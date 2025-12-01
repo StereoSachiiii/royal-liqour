@@ -50,6 +50,18 @@ class SupplierRepository
         return $row ? $this->mapToModel($row) : null;
     }
 
+
+    public function getByEmail(string $email): ?SupplierModel
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM suppliers WHERE email = :email"
+        );
+        $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? $this->mapToModel($row) : null;
+    }
+
     public function getByIdAdmin(int $id): ?SupplierModel
     {
         $stmt = $this->pdo->prepare("SELECT * FROM suppliers WHERE id = :id");

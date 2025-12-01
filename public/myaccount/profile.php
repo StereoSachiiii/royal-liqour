@@ -135,30 +135,12 @@ require_once __DIR__ . '/../header/header.php';
     <?php endif; ?>
 
     <script type="module">
+        import {getAddresses} from '../utils/addresses.js'
         const dashboardGrid = document.querySelector('.my-account-dashboard')
         const addresses = document.querySelector('.addresses')
 
 
-        const getAddresses = async (id) => {
-            try{
-                const options = {
-                    method:'GET',
-                    headers:{
-                        'Content-Type':'application/json'
-                    },
-                    credentials:'same-origin'
-                }
-                const response = await fetch(`http://localhost/royal-liquor/admin/api/addresses.php?user_id=${id}`,options)
-
-                if(!response.ok){
-                    throw Error(`Error fetching User Adresses ${response.statustext}`)
-                }
-                const body = await response.json()
-                return body.data.addresses
-            }catch(error){
-                return{error:error.message}
-            }
-        }
+       
 
         const parseAdresses = async (addressList) => {
             let html = ''
@@ -191,7 +173,7 @@ require_once __DIR__ . '/../header/header.php';
             const id = Number.parseInt(<?= $session->getUserId()?>)
            
             const addressList = await getAddresses(id)
-            console.log(addressList);
+           
             const html = await parseAdresses(addressList)
             addresses.innerHTML = html
             

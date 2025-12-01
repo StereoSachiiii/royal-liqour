@@ -1,47 +1,63 @@
-/* ================= Body ================= */
+@import url('user.css');
+@import url('overview.css'); 
+@import url('product.css');
+@import url('orders.css');
+@import url('category.css');
+@import url('suppliers.css');
+@import url('warehouses.css');
+@import url('stocks.css');
+@import url('order-items.css');
+@import url('feedback.css');
+@import url('user-addresses.css');
+@import url('carts.css');
+@import url('cocktail-recipes.css');
+@import url('user-preferences.css');
+@import url('cart-items.css');
+@import url('recipe-ingredients.css');
+@import url('product-recognition.css');
+@import url('payments.css');
+@import url('flavor-profiles.css');
+
+:root {
+    --bg: #ffffff;
+    --muted: #6c757d;
+    --border: #e9ecef;
+    --accent: #007bff;
+    --accent-strong: #0056b3;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --surface: #f8f9fa;
+    --radius: 6px;
+    --gap: 12px;
+    --max-width: 1600px;
+    --table-font-size: 14px;
+}
+
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     padding: 0;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f3f4f6;
     color: #111827;
+    line-height: 1.5;
 }
 
-/* breadcrumb */
-.breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    font-size: 14px;
-    color: #666;
-}
-
-.breadcrumb-home {
-    color: #999;
-}
-
-.breadcrumb-separator {
-    color: #ccc;
-}
-
-.breadcrumb-current {
-    color: #333;
-    font-weight: 600;
-}
-
-.sidebar-menu a.active {
-    background-color: #f0f0f0;
-    border-left: 3px solid #007bff;
-    color: #007bff;
-    font-weight: 600;
-}
-/* ================= Sidebar ================= */
+/* ============================================
+   SIDEBAR
+   ============================================ */
 #sidebar {
     position: fixed;
     top: 0;
     left: 0;
-    width: 220px;
+    width: 240px;
     height: 100vh;
     background-color: #1f2937;
     color: #fff;
@@ -49,6 +65,8 @@ body {
     flex-direction: column;
     transition: all 0.3s ease;
     z-index: 1000;
+    overflow-y: auto;
+    padding-bottom: 32px ;
 }
 
 #sidebar .sidebar-header {
@@ -83,12 +101,20 @@ body {
     transition: background 0.2s;
 }
 
-#sidebar .sidebar-menu li a:hover,
-#sidebar .sidebar-menu li a.active {
+#sidebar .sidebar-menu li a:hover {
     background-color: #374151;
 }
 
-/* ================= Header / Navbar ================= */
+#sidebar .sidebar-menu li a.active {
+    background-color: #374151;
+    border-left: 3px solid var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* ============================================
+   HEADER / NAVBAR
+   ============================================ */
 #admin-header {
     position: fixed;
     top: 0;
@@ -99,8 +125,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.5rem ;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 0 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 900;
 }
 
@@ -121,147 +147,46 @@ body {
     color: #111827;
 }
 
+/* ============================================
+   LOGOUT BUTTON
+   ============================================ */
 .logout-btn {
     padding: 0.35rem 0.75rem;
     background-color: #ef4444;
     color: #fff;
     text-decoration: none;
+    border: none;
     border-radius: 4px;
     font-size: 0.85rem;
+    cursor: pointer;
     transition: background 0.2s;
 }
 
 .logout-btn:hover {
     background-color: #b91c1c;
 }
-/* table styling */
-.styled-table {
-  border-collapse: collapse;
-  width: 100%;
-  border: 1px solid #ddd;
-}
-.styled-table th,
-.styled-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-.styled-table th {
-  background-color: #f2f2f2;
-}
-.options-btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.options-btn:hover {
-  background-color: #0056b3;
+
+.logout-btn:focus {
+    outline: 2px solid rgba(239, 68, 68, 0.25);
+    outline-offset: 2px;
 }
 
-/* modal overlay */
-/* Modal overlay */
-#modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backdrop-filter: blur(5px);   /* blur background */
-    background-color: rgba(0, 0, 0, 0.4); /* semi-transparent dark overlay */
-    display: none;  /* hidden by default */
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
-
-/* Show modal */
-#modal.active {
-    display: flex;
-}
-
-/* Modal content box */
-.modal-content {
-    background-color: #fff;
-    padding: 24px 32px;
-    border-radius: 12px;
-    max-height: 600px;
-    height:90%;
-    max-width: 800px;
-    width: 90%;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    position: relative;
-}
-.title{
-    width: 100%;
-    text-align: center;
-    font-size: x-large;
-    background: rgba(255, 149, 0, 0.633);
-    border-radius:  5px;
-
-}
-.field{
-    width: 100%;
-    padding: 3px;
-    text-align: center;
-    font-size: large;
-}
-/* Close button */
-#modal-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-    font-weight: bold;
-    color: #333;
-    user-select: none;
-}
-
-.close {
-  position: absolute;
-  right: 12px;
-  top: 8px;
-  font-size: 24px;
-  cursor: pointer;
-  color: #555;
-}
-.close:hover {
-  color: black;
-}
-
-
-/* ================= Main Content ================= */
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
 #content {
     margin-left: 220px;
-    margin-top: 100px;
+    margin-top: 60px;
     padding: 2rem;
     transition: margin-left 0.3s ease;
     overflow: auto;
-    margin-bottom: 50px;
-    
-}
-
-.container{
-    height: 100vh;
-    width: 100vw;
-    background-color: #33333332;
-
-}
-
-
-.delete-btn{
-    background: red;
-   margin:3px;
-   
+    min-height: calc(100vh - 60px);
 }
 
 #content h3 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
+    color: #111827;
 }
 
 #content p {
@@ -269,55 +194,106 @@ body {
     color: #6b7280;
 }
 
-/* ================= Modals ================= */
-#modal-root {
+/* ============================================
+   BREADCRUMB
+   ============================================ */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 14px;
+    color: #666;
+}
+
+.breadcrumb-home,
+.breadcrumb-separator {
+    color: #999;
+}
+
+.breadcrumb-current {
+    color: #333;
+    font-weight: 600;
+}
+
+/* ============================================
+   DASHBOARD WELCOME
+   ============================================ */
+.dashboard-welcome {
+    padding: 2rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-welcome h3 {
+    margin-bottom: 1rem;
+    color: #111827;
+}
+
+.dashboard-welcome p {
+    margin: 0;
+    color: #555;
+}
+
+/* ============================================
+   MODAL CONTAINER
+   ============================================ */
+#modal {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
     z-index: 1100;
-    
-}
-
-.modal {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #fff;
-    padding: 1.5rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-    border-radius: 8px;
-    min-width: 300px;
-    display: none;
-    pointer-events: all;
-}
-
-.modal-active {
-    display: block;
-}
-
-.modal .closeBtn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
-    display: flex;
     align-items: center;
     justify-content: center;
+    padding: 1rem;
+    width: 100vw;
+    height: 100vh;
 }
 
-.modal .closeBtn svg {
+#modal.active {
+    display: flex;
+}
+
+#modal-content {
+    background: var(--bg);
+    border-radius: 8px;
+    max-width: 700px;
     width: 100%;
-    height: 100%;
-    stroke: #111827;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
-/* ================= Responsive ================= */
+/* ============================================
+   GENERIC UTILITY CLASSES
+   ============================================ */
+.container {
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+}
+
+.text-success {
+    color: var(--success);
+}
+
+.text-warning {
+    color: var(--warning);
+}
+
+.text-danger {
+    color: var(--danger);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
 @media (max-width: 768px) {
     #sidebar {
         width: 180px;
@@ -332,18 +308,38 @@ body {
     }
 }
 
-.dashboard-welcome {
-    padding: 2rem;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+@media (max-width: 480px) {
+    #sidebar {
+        width: 150px;
+    }
+
+    #sidebar .sidebar-menu li a {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    #admin-header {
+        left: 150px;
+        padding: 0 1rem;
+    }
+
+    #content {
+        margin-left: 150px;
+        padding: 1rem;
+    }
 }
 
-.dashboard-welcome h3 {
-    margin-bottom: 1rem;
-}
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+    #sidebar,
+    #admin-header {
+        display: none;
+    }
 
-.dashboard-welcome p {
-    color: #555;
+    #content {
+        margin-left: 0;
+        margin-top: 0;
+    }
 }

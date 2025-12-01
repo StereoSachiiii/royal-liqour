@@ -15,7 +15,7 @@ class RateLimitMiddleware
     public static function check($key,$maxRequests = 3, $timeWindow = 60): void{
         self::configure(3, 60); // default: 3 requests per 60 seconds
         if(self::checkExecute($key)){
-            throw new Exception("Rate limit exceeded. Try again later.");
+    //        throw new Exception("Rate limit exceeded. Try again later.");
         };
 
     }

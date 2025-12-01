@@ -67,23 +67,27 @@ try {
         case 'PUT':
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('payment_update', 5, 60);
-
-            if (!isset($_GET['id'])) throw new Exception("Payment ID required", 400);
-
-            $id = (int)$_GET['id'];
             $body = json_decode(file_get_contents('php://input'), true) ?? [];
-            $result = $controller->update($id, $body);
+            if (!isset($_GET['id']) && !isset($body['id'])) throw new Exception("Payment ID required", 400);
+
+            $id = $_GET['id'] ?? $body['id'];
+            $result = $controller->update(intval($id), $body);
             JsonMiddleware::sendResponse($result, $result['code']);
             break;
 
         case 'DELETE':
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('payment_delete', 5, 60);
-
-            if (!isset($_GET['id'])) throw new Exception("Payment ID required", 400);
-
-            $id = (int)$_GET['id'];
-            $result = $controller->delete($id);
+            $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            if (!isset($_GET['id']) && !isset($body['id'])) throw new Exception("Payment ID required", 400);
+            if ((isset($_GET['hard']) || isset($body['hard']))&&($_GET['hard'] || $body['hard'])) {
+                RateLimitMiddleware::check('payment_hard_delete', 2, 60);
+                $result = $controller->hardDelete(intval($id));
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
+            $id = $_GET['id'] ?? $body['id'];
+            $result = $controller->delete(intval($id));
             JsonMiddleware::sendResponse($result, $result['code']);
             break;
 

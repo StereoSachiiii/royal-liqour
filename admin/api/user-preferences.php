@@ -1,10 +1,10 @@
 <?php 
-require_once __DIR__ . '/../controllers/UserPreferenceController.php';
+require_once __DIR__ . '/../controllers/UserPreferrenceController.php';
 require_once __DIR__ . '/../middleware/RateLimitMiddleware.php';
 require_once __DIR__ . '/../middleware/JsonMiddleware.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
-$controller = new UserPreferenceController();
+$controller = new UserPreferrenceController();
 
 try {
     switch ($method) {
@@ -26,15 +26,17 @@ try {
         case 'POST':
             RateLimitMiddleware::check('user_pref_create', 5, 60);
             $body = json_decode(file_get_contents('php://input'), true);
+
             $result = $controller->create($body);
             JsonMiddleware::sendResponse($result, 201);
             break;
 
         case 'PUT':
-            if (!isset($_GET['id'])) throw new Exception("ID required for update", 400);
-            RateLimitMiddleware::check('user_pref_update', 10, 60);
             $body = json_decode(file_get_contents('php://input'), true);
-            $result = $controller->update((int)$_GET['id'], $body);
+            if (!isset($_GET['id'])&&!isset($body['id'])) throw new Exception("ID required for update", 400);
+            RateLimitMiddleware::check('user_pref_update', 10, 60);
+            $id = isset($_GET['id']) ? (int)$_GET['id'] : (int)$body['id'];
+            $result = $controller->update($id, $body);
             JsonMiddleware::sendResponse($result, 200);
             break;
 

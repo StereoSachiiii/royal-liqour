@@ -41,6 +41,38 @@ class OrderItemRepository
         return $this->mapToModels($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
+public function update(int $id, array $data): OrderItemModel
+{
+    // Only allow updating quantity and warehouse_id
+    $allowedFields = [];
+    $params = [':id' => $id];
+    
+    if (isset($data['quantity'])) {
+        $allowedFields[] = 'quantity = :quantity';
+        $params[':quantity'] = $data['quantity'];
+    }
+    
+    if (isset($data['warehouse_id'])) {
+        $allowedFields[] = 'warehouse_id = :warehouse_id';
+        $params[':warehouse_id'] = $data['warehouse_id'];
+    }
+    
+    if (empty($allowedFields)) {
+        throw new \InvalidArgumentException('No valid fields to update');
+    }
+    
+    $sql = "UPDATE order_items SET " . implode(', ', $allowedFields) . " WHERE id = :id RETURNING *";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+    
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        throw new NotFoundException("Order item with ID $id not found");
+    }
+    
+    return $this->mapToModel($row);
+}
     public function count(): int
     {
         $stmt = $this->pdo->query("SELECT COUNT(*) FROM order_items");
@@ -76,19 +108,20 @@ class OrderItemRepository
         return $stmt->rowCount() > 0;
     }
 
-    private function mapToModel(array $row): OrderItemModel
-    {
-        return new OrderItemModel(
-            id: (int)$row['id'],
-            order_id: (int)$row['order_id'],
-            product_id: (int)$row['product_id'],
-            product_name: $row['product_name'],
-            product_image_url: $row['product_image_url'],
-            price_cents: (int)$row['price_cents'],
-            quantity: (int)$row['quantity'],
-            created_at: $row['created_at']
-        );
-    }
+private function mapToModel(array $row): OrderItemModel
+{
+    return new OrderItemModel(
+        id: (int)$row['id'],
+        order_id: (int)$row['order_id'],
+        product_id: (int)$row['product_id'],
+        product_name: $row['product_name'],
+        product_image_url: $row['product_image_url'],
+        price_cents: (int)$row['price_cents'],
+        quantity: (int)$row['quantity'],
+        warehouse_id: isset($row['warehouse_id']) ? (int)$row['warehouse_id'] : null, // ADD THIS
+        created_at: $row['created_at']
+    );
+}
 
     private function mapToModels(array $rows): array
     {

@@ -55,9 +55,9 @@ try {
             }
 
             if (isset($_GET['search'])) {
-                $query = (string)$_GET['search'];
-                $limit = (int)($_GET['limit'] ?? 50);
-                $offset = (int)($_GET['offset'] ?? 0);
+                $query = $_GET['search']?  strval($_GET['search']) : '';
+                $limit = $_GET['limit'] ? (int)($_GET['limit']) : 50;   
+                $offset = $_GET['offset'] ? (int)($_GET['offset']) : 0;
                 $result = $controller->search($query, $limit, $offset);
                 JsonMiddleware::sendResponse($result, 200);
                 break;
@@ -91,12 +91,11 @@ try {
             AuthMiddleware::requireAdmin();
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('warehouse_update', 5, 60);
-
-            if (!isset($_GET['id'])) throw new Exception("Warehouse ID required", 400);
-
-            $id = (int)$_GET['id'];
             $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            if (!isset($_GET['id']) && !isset($body)) throw new Exception("Warehouse ID required", 400);
 
+            $id = $_GET['id'] ?? $body['id'] ;
+            $id = (int)$id;
             if (isset($_GET['partial']) && $_GET['partial'] === 'true') {
                 $result = $controller->partialUpdate($id, $body);
             } else {

@@ -13,8 +13,19 @@ const pages = [
     { page: "Categories", path: "categories" },
     { page: "Suppliers", path: "suppliers" },
     { page: "Warehouses", path: "warehouses" },
-    { page: "Reports", path: "reports" },
-    { page: "Settings", path: "settings" }
+    { page: 'Order Items', path: 'order-items' },
+    { page: 'User Preferences', path: 'user-preferences' },
+    { page: 'User Addresses', path: 'user-addresses' },
+    { page: 'Feedback', path: 'feedback' },
+    { page: 'Carts', path: 'carts' },
+    { page: 'Cart Items', path: 'cart-items' },
+    { page: 'Flavour Profiles', path: 'flavour-profiles' },
+    { page: 'Recipe Ingredients', path: 'recipe-ingredients' },
+    {page: 'Cocktail Recipes', path: 'cocktail-recipes' },
+    {page: 'suppliers', path: 'suppliers' },
+    {page: 'Payments' , path: 'payments'},{
+        page: 'Product Recognition', path:'product-recognition'
+    }
 ];
 
 let currentPage = "Overview";
@@ -75,4 +86,4 @@ menuElement.addEventListener('click', (event) => {
 });
 
 // Initial render
-navigate('Overview');
+navigate('');

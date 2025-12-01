@@ -53,17 +53,27 @@ try {
             break;
 
         case 'PUT':
-            if (!isset($_GET['id'])) throw new Exception("ID required for update", 400);
-            RateLimitMiddleware::check('feedback_update', 10, 60);
             $body = json_decode(file_get_contents('php://input'), true);
-            $result = $controller->update((int)$_GET['id'], $body);
+            if (!isset($_GET['id'])&&!isset($body['id'])) throw new Exception("ID required for update", 400);
+            RateLimitMiddleware::check('feedback_update', 10, 60);
+            $id = isset($_GET['id']) ? (int)$_GET['id'] : (int)$body['id'];
+            $result = $controller->update($id, $body);
             JsonMiddleware::sendResponse($result, 200);
             break;
 
         case 'DELETE':
-            if (!isset($_GET['id'])) throw new Exception("ID required for delete", 400);
+            $body = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($_GET['id']) && !isset($body['id'])) throw new Exception("ID required for delete", 400);
             RateLimitMiddleware::check('feedback_delete', 5, 60);
-            $result = $controller->delete((int)$_GET['id']);
+
+            $id = isset($_GET['id']) ? (int)$_GET['id'] : (int)$body['id'];
+            if($body['hard'] ?? boolval($body['hard'])==true) {
+                $result = $controller->hardDelete($id);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
+            $result = $controller->delete($id);
             JsonMiddleware::sendResponse($result, 200);
             break;
 

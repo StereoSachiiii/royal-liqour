@@ -3,8 +3,8 @@ const cartCount = document.querySelector('.count');
 const cartCountHeader = document.querySelector('.count-display');
 
 export const updateCartCount = async () => {
-    cartCount.innerHTML  = `${await getCartCount()}`;
-    cartCountHeader.innerHTML = `${await getCartCount()}`;
+    cartCount.innerHTML  = `${await getCartCount() ?? ''}`;
+    cartCountHeader.innerHTML = `${await getCartCount() ?? ''}`;
 }
 document.addEventListener("DOMContentLoaded", async () => {
     const menuBtn = document.getElementById('menu');
@@ -23,10 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const cartExpand = document.querySelector('.cart-expand');
     
     await updateCartCount()
-    cartIcon.addEventListener('click', (event) => {
-        event.stopPropagation();
-        cartExpand.classList.toggle('active');
-    });
+
 
     document.addEventListener('click', (event) => {
         const isClickInsideCart = cartIcon.contains(event.target) || cartExpand.contains(event.target);

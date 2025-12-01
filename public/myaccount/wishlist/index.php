@@ -3,7 +3,7 @@
     <div class="wishlist-header">
         <h1>My Wishlist</h1>
         <p class="wishlist-count"><span id="wishlist-count">0</span> items</p>
-        <button id="add-all-to-cart-btn" class="wishlist-btn add-all-btn" style="display:none;">
+        <button id="add-all-to-cart-btn" class="wishlist-btn add-all-btn hidden">
             Add All To Cart
         </button>
     </div>
@@ -14,21 +14,17 @@
 </div>
 
 <div id="toast-container"></div>
-<div id="cart-modal-wishlist" class="cart-modal-wishlist">
-    <div class="cart-modal-wishlist-content">
+<div id="cart-modal" class="cart-modal">
+    <div class="cart-modal-content">
         <p><span id="modal-item-count">X</span> items added to cart!</p>
         <a href="/cart" class="visit-cart-btn">Visit Cart</a>
     </div>
 </div>
 
-<style>
-    /* Paste the updated CSS from section 3 here */
-</style>
-
 <script type="module">
     import { getWishlist, saveWishlist } from '../../utils/wishlist.js';
-    import { cartAddItem, updateCartCount } from '../../utils/cart.js';
-    import { updateCartCount} from '../../header.header.js'
+    import { cartAddItem } from '../../utils/cart.js';
+    import { updateCartCount } from '../../header/header.js';
 
     function showToast(message, duration = 3000) {
         const toastContainer = document.getElementById('toast-container');
@@ -44,25 +40,40 @@
 
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => {
-                toast.remove();
-            }, 300);
+            setTimeout(() => toast.remove(), 300);
         }, duration);
     }
 
     function showCartModal(count) {
-        const modal = document.getElementById('cart-modal-wishlist');
+        const modal = document.getElementById('cart-modal');
         document.getElementById('modal-item-count').textContent = count;
         modal.classList.add('show-modal');
         
-        setTimeout(() => {
-            modal.classList.remove('show-modal');
-        }, 5000);
+        setTimeout(() => modal.classList.remove('show-modal'), 5000);
     }
     
     function formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // Helper function to get price from item (handles both price and price_cents)
+    function getItemPrice(item) {
+        if (item.price_cents !== undefined) {
+            return (item.price_cents / 100).toFixed(2);
+        }
+        return parseFloat(item.price || 0).toFixed(2);
+    }
+
+    // Helper function to get image URL from item
+    function getItemImage(item) {
+        return item.image_url || item.image || '';
+    }
+
+    // Helper function to get date for grouping
+    function getItemDate(item) {
+        // Use created_at, updated_at, or added_date
+        return item.created_at || item.updated_at || item.added_date || null;
     }
 
     async function loadWishlist() {
@@ -76,7 +87,7 @@
             wishlistCountElement.textContent = wishlist.length;
 
             if (wishlist.length === 0) {
-                addAllBtn.style.display = 'none';
+                addAllBtn.classList.add('hidden');
                 wishlistContent.innerHTML = `
                     <div class="empty-wishlist">
                         <h2>Your wishlist is empty</h2>
@@ -87,20 +98,21 @@
                 return;
             }
 
-            addAllBtn.style.display = 'block';
+            addAllBtn.classList.remove('hidden');
 
-            // Grouping and Sorting
             const groupedWishlist = wishlist.reduce((acc, item) => {
-                // Assuming 'added_date' is available in the item object from getWishlist()
-                const dateKey = item.added_date ? formatDate(item.added_date) : 'Unsorted Items';
-                if (!acc[dateKey]) {
-                    acc[dateKey] = [];
-                }
+                const itemDate = getItemDate(item);
+                const dateKey = itemDate ? formatDate(itemDate) : 'Unsorted Items';
+                if (!acc[dateKey]) acc[dateKey] = [];
                 acc[dateKey].push(item);
                 return acc;
             }, {});
 
-            const sortedDateKeys = Object.keys(groupedWishlist).sort((a, b) => new Date(b) - new Date(a));
+            const sortedDateKeys = Object.keys(groupedWishlist).sort((a, b) => {
+                if (a === 'Unsorted Items') return 1;
+                if (b === 'Unsorted Items') return -1;
+                return new Date(b) - new Date(a);
+            });
 
             const listHTML = sortedDateKeys.map(dateKey => {
                 const items = groupedWishlist[dateKey];
@@ -112,10 +124,10 @@
                                 <div class="wishlist-item" data-item-id="${item.id}">
                                     <div class="item-summary">
                                         <div class="wishlist-item-name">${item.name}</div>
-                                        <div class="wishlist-item-price">Rs. ${parseFloat(item.price).toFixed(2)}</div>
+                                        <div class="wishlist-item-price">Rs. ${getItemPrice(item)}</div>
                                     </div>
                                     <div class="item-details">
-                                        <img src="<?= BASE_URL ?>${item.image}" alt="${item.name}" class="wishlist-item-image">
+                                        <img src="${getItemImage(item)}" alt="${item.name}" class="wishlist-item-image">
                                         <div class="detail-actions">
                                             <div class="wishlist-item-quantity">
                                                 <label for="qty-${item.id}">Qty:</label>
@@ -142,7 +154,6 @@
 
             wishlistContent.innerHTML = listHTML;
 
-            // Add to Cart Logic
             document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const button = e.target;
@@ -150,77 +161,64 @@
                     const itemElement = button.closest('.wishlist-item');
                     const qtySelect = itemElement.querySelector(`.item-qty-select[data-item-id="${itemId}"]`);
                     const quantity = parseInt(qtySelect.value);
-                    const originalText = button.textContent;
+                    const itemName = itemElement.querySelector('.wishlist-item-name').textContent;
+                    
+                    button.classList.add('loading');
                     
                     try {
-                        button.disabled = true;
-                        button.textContent = 'Adding...';
-                        
                         await cartAddItem(itemId, quantity);
-                        await updateCartCount()
-                        
-                        showToast(`"${itemElement.querySelector('.wishlist-item-name').textContent}" added to cart!`);
-                        
+                        await updateCartCount();
+                        showToast(`"${itemName}" added to cart!`);
                         await removeFromWishlist(itemId);
-                        
                     } catch (error) {
                         console.error('Failed to add to cart:', error);
-                        button.textContent = 'Failed';
-                        button.style.backgroundColor = '#dc3545';
+                        button.classList.remove('loading');
+                        button.classList.add('error');
                         
                         setTimeout(() => {
-                            button.textContent = originalText;
-                            button.style.backgroundColor = '';
-                            button.disabled = false;
+                            button.classList.remove('error');
                         }, 2000);
                     }
                 });
             });
 
-            // Remove Logic
             document.querySelectorAll('.remove-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const itemId = parseInt(e.target.dataset.itemId);
-                        await removeFromWishlist(itemId);
-                        showToast('Item removed from wishlist.', 2000);
-                    
+                    await removeFromWishlist(itemId);
+                    showToast('Item removed from wishlist.', 2000);
                 });
             });
             
-            // Add All to Cart Logic
             addAllBtn.addEventListener('click', async () => {
-                addAllBtn.disabled = true;
-                addAllBtn.textContent = 'Processing...';
-
+                addAllBtn.classList.add('processing');
+                
                 let itemsAdded = 0;
                 let newWishlist = [];
                 const currentWishlist = await getWishlist();
                 
                 for (const item of currentWishlist) {
                     try {
-                        // Add 1 unit of each item
                         await cartAddItem(item.id, 1);
                         itemsAdded++;
-                        updateCartCount()
                     } catch (error) {
                         console.error(`Failed to add item ${item.id} to cart:`, error);
-                        // If it fails, keep it in the wishlist
                         newWishlist.push(item);
                     }
                 }
 
                 saveWishlist(newWishlist);
+                await updateCartCount();
                 await loadWishlist();
                 
-                addAllBtn.textContent = 'Add All To Cart';
-                addAllBtn.disabled = false;
+                addAllBtn.classList.remove('processing');
 
                 if (itemsAdded > 0) {
                     showCartModal(itemsAdded);
                 } else {
                     showToast('No items were added to the cart.', 3000);
                 }
-            });
+            }, { once: true });
 
         } catch (error) {
             console.error('Failed to load wishlist:', error);

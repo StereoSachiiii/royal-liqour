@@ -1,17 +1,18 @@
 <?php
 declare(strict_types=1);
 
-class OrderItemModel
+ class OrderItemModel
 {
     public function __construct(
-        private ?int $id = null,
-        private ?int $order_id = null,
-        private ?int $product_id = null,
-        private ?string $product_name = null,
-        private ?string $product_image_url = null,
-        private int $price_cents = 0,
-        private int $quantity = 0,
-        private ?string $created_at = null
+        public ?int $id = null,
+        public ?int $order_id = null,
+        public ?int $product_id = null,
+        public ?string $product_name = null,
+        public ?string $product_image_url = null,
+        public int $price_cents = 0,
+        public int $quantity = 0,
+        public ?string $created_at = null,
+        public ?int $warehouse_id = null
     ) {}
 
     // Getters

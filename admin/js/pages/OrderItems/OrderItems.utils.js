@@ -1,0 +1,79 @@
+import { API_URL_ORDER_ITEMS, DETAIL_VIEW_API_URL } from "../config.js";
+import { OrderItems } from "./OrderItems.js";
+
+/**
+ * Fetch order items from API with proper error handling
+ * @param {number} limit - Number of order items to fetch
+ * @param {number} offset - Offset for pagination
+ * @param {string} query - Search query
+ * @returns {Promise<Array|Object>} Array of order items or error object
+ */
+export async function fetchOrderItems(limit = DEFAULT_LIMIT, offset = 0, query = '') {
+    try {
+        const url = `${DETAIL_VIEW_API_URL}?entity=order_items&limit=${limit}&offset=${offset}${query ? `&query=${encodeURIComponent(query)}` : ''}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text().catch(() => ({}));
+            
+            console.log(errorData);
+            if (response.status === 401) {
+                window.location.href = '/royal-liquor/public/auth/auth.php';
+                return { error: 'Please login to continue' };
+            }
+            
+            if (response.status === 403) {
+                return { error: 'Access denied. Admin privileges required.' };
+            }
+            
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data.data.items || [];
+        
+    } catch (error) {
+        console.error('Error fetching order items:', error);
+        return { error: error.message };
+    }
+}
+
+export const fetchModalDetails = async (itemId) => {
+    try {
+        const response = await fetch(`${DETAIL_VIEW_API_URL}?entity=order_items&id=${itemId}`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            
+            if (response.status === 401) {
+                window.location.href = '/login.php';
+                return { error: 'Please login to continue' };
+            }
+            
+            if (response.status === 403) {
+                return { error: 'Access denied. Admin privileges required.' };
+            }
+            
+            if (response.status === 404) {
+                return { error: 'Order item not found' };
+            }
+            
+            throw new Error(errorData.message || `Failed to fetch order item`);
+        }
+
+        const data = await response.json();
+
+        return { success: true, order_item: data.data.data };
+        
+    } catch (error) {
+        console.error('Error fetching order item:', error);
+        return { error: error.message };
+    }
+}

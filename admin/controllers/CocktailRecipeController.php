@@ -1,93 +1,89 @@
-<?
-class CocktailRecipeController {
-    private CocktailRecipeRepository $repository;
-    private CocktailRecipeValidator $validator;
-    private RecipeIngredientRepository $ingredientRepo;
+<?php
+declare(strict_types=1);
 
-    public function __construct() {
-        $this->repository = new CocktailRecipeRepository();
-        $this->validator = new CocktailRecipeValidator();
-        $this->ingredientRepo = new RecipeIngredientRepository();
+require_once __DIR__ . '/../repositories/CocktailRecipeRepository.php';
+require_once __DIR__ . '/../validators/CocktailRecipeValidator.php';
+require_once __DIR__ . '/../exceptions/ValidationException.php';
+require_once __DIR__ . '/../exceptions/NotFoundException.php';
+
+class CocktailRecipeController
+{
+    private CocktailRecipeRepository $repo;
+
+    public function __construct()
+    {
+        $this->repo = new CocktailRecipeRepository();
     }
 
-    private function successResponse(string $message, $data, int $code = 200): array {
-        return ['success' => true, 'message' => $message, 'data' => $data, 'code' => $code, 'context' => []];
+    private function success(string $message, $data = [], int $code = 200): array
+    {
+        return [
+            'success' => true,
+            'message' => $message,
+            'data'    => $data,
+            'code'    => $code
+        ];
     }
 
-    private function errorResponse(Exception $error): array {
-        error_log("[" . date('Y-m-d H:i:s') . "] CocktailRecipeController: " . $error->getMessage());
-        return ['success' => false, 'message' => $error->getMessage(), 'code' => 500, 'context' => []];
+    private function error(Throwable $e): array
+    {
+        $code = $e instanceof ValidationException ? 400 : ($e->getCode() ?: 500);
+        return [
+            'success' => false,
+            'message' => $e->getMessage(),
+            'data'    => null,
+            'code'    => $code
+        ];
     }
 
-    private function handleRequest(callable $callback): array {
-        try { return $callback(); } catch(Exception $ex) { return $this->errorResponse($ex); }
+    public function getAll(int $limit = 50, int $offset = 0): array
+    {
+        $recipes = $this->repo->getAll($limit, $offset);
+        $data = array_map(fn($r) => $r->toArray(), $recipes);
+        return $this->success('Cocktail recipes retrieved', ['items' => $data, 'total' => $this->repo->count()]);
     }
 
-    public function create($data): array {
-        return $this->handleRequest(function() use ($data) {
-            CocktailRecipeValidator::validateCreate($data);
-            $result = $this->repository->create($data);
-            return $this->successResponse("Cocktail recipe created successfully.", $result->toArray(), 201);
-        });
+    public function getById(int $id): array
+    {
+        $recipe = $this->repo->getById($id);
+        if (!$recipe) throw new NotFoundException('Cocktail recipe not found');
+        return $this->success('Recipe retrieved', $recipe->toArray());
     }
 
-    public function getById(int $id): array {
-        return $this->handleRequest(function() use ($id) {
-            $recipe = $this->repository->getById($id);
-            if (!$recipe) throw new NotFoundException("Recipe not found.");
-            
-            $ingredients = $this->ingredientRepo->getByRecipeId($id);
-            $recipeData = $recipe->toArray();
-            $recipeData['ingredients'] = array_map(fn($i) => $i->toArray(), $ingredients);
-            
-            return $this->successResponse("Recipe retrieved successfully.", $recipeData);
-        });
+    public function create(array $data): array
+    {
+      //  CocktailRecipeValidator::validateCreate($data);
+        $recipe = $this->repo->create($data);
+        return $this->success('Cocktail recipe created', $recipe->toArray(), 201);
     }
 
-    public function getByDifficulty(string $difficulty): array {
-        return $this->handleRequest(function() use ($difficulty) {
-            $recipes = $this->repository->getByDifficulty($difficulty);
-            return $this->successResponse("Recipes retrieved successfully.", array_map(fn($r) => $r->toArray(), $recipes));
-        });
+    public function update(int $id, array $data): array
+    {
+       // CocktailRecipeValidator::validateUpdate($data);
+
+        $existing = $this->repo->getById($id);
+        if (!$existing) throw new NotFoundException('Cocktail recipe not found');
+
+        $updated = $this->repo->update($id, $data);
+        if (!$updated) throw new Exception('Failed to update recipe');
+
+        return $this->success('Cocktail recipe updated', $updated->toArray());
     }
 
-    public function searchByName(string $name): array {
-        return $this->handleRequest(function() use ($name) {
-            $recipes = $this->repository->searchByName($name);
-            return $this->successResponse("Recipes retrieved successfully.", array_map(fn($r) => $r->toArray(), $recipes));
-        });
+    public function delete(int $id, bool $hard = false): array
+    {
+        $exists = $this->repo->getById($id, true);
+        if (!$exists) throw new NotFoundException('Cocktail recipe not found');
+
+        $success = $hard ? $this->repo->hardDelete($id) : $this->repo->softDelete($id);
+
+        if (!$success) throw new Exception('Failed to delete recipe');
+
+        return $this->success($hard ? 'Recipe permanently deleted' : 'Recipe deactivated');
     }
 
-    public function update(int $id, array $data): array {
-        return $this->handleRequest(function() use ($id, $data) {
-            CocktailRecipeValidator::validateUpdate($data);
-            $updated = $this->repository->update($id, $data);
-            if (!$updated) throw new NotFoundException("Recipe not found.");
-            return $this->successResponse("Recipe updated successfully.", $updated->toArray());
-        });
-    }
-
-    public function delete(int $id): array {
-        return $this->handleRequest(function() use ($id) {
-            $result = $this->repository->delete($id);
-            if (!$result) throw new NotFoundException("Recipe not found.");
-            return $this->successResponse("Recipe deleted successfully.", ['id' => $id]);
-        });
-    }
-
-    public function getAll(): array {
-        return $this->handleRequest(function() {
-            $recipes = $this->repository->getAll();
-            return $this->successResponse("Recipes retrieved successfully.", array_map(fn($r) => $r->toArray(), $recipes));
-        });
-    }
-
-    public function getAllPaginated(int $limit, int $offset): array {
-        return $this->handleRequest(function() use ($limit, $offset) {
-            CocktailRecipeValidator::paginationParams($limit, $offset);
-            $recipes = $this->repository->getAllPaginated($limit, $offset);
-            return $this->successResponse("Recipes retrieved successfully.", array_map(fn($r) => $r->toArray(), $recipes));
-        });
+    public function count(): array
+    {
+        return $this->success('Count retrieved', $this->repo->count());
     }
 }
-?>

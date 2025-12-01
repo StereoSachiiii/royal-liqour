@@ -44,7 +44,18 @@ class AddressRepository
         return $row ? $this->mapToModel($row) : null;
     }
 
-    public function create(int $userId, array $data): AddressModel
+        public function getUserAddressesAll(int $id): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM user_addresses WHERE user_id = :id AND deleted_at IS NULL"
+        );
+        $stmt->bindValue(":id",$id,PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ? $this->mapToModels($rows) : null;
+    }
+
+    public function create( array $data): AddressModel
     {
         $stmt = $this->pdo->prepare(
             "INSERT INTO user_addresses 
@@ -55,51 +66,94 @@ class AddressRepository
               :postal, :country, :default) 
              RETURNING *"
         );
-        $stmt->execute([
-            ':user_id' => $userId,
-            ':type' => $data['address_type'] ?? 'both',
-            ':recipient' => $data['recipient_name'] ?? null,
-            ':phone' => $data['phone'] ?? null,
-            ':line1' => $data['address_line1'],
-            ':line2' => $data['address_line2'] ?? null,
-            ':city' => $data['city'],
-            ':state' => $data['state'] ?? null,
-            ':postal' => $data['postal_code'],
-            ':country' => $data['country'] ?? 'Sri Lanka',
-            ':default' => $data['is_default'] ?? false
-        ]);
+        $stmt->bindValue(':user_id',$data['user_id'],PDO::PARAM_INT);
+        $stmt->bindValue(':type',$data['address_type']??'',PDO::PARAM_STR);
+        $stmt->bindValue(':recipient',$data['recipient_name']??false,PDO::PARAM_STR);
+        $stmt->bindValue(':phone',$data['phone']??false,PDO::PARAM_INT);
+        $stmt->bindValue(':line1',$data['address_line1']??false,PDO::PARAM_STR);
+        $stmt->bindValue(':line2',$data['address_line2']??false,PDO::PARAM_STR);
+        $stmt->bindValue(':city',$data['city']??false,PDO::PARAM_STR);
+        $stmt->bindValue(':state',$data['state']??false,PDO::PARAM_STR);
+        $stmt->bindValue(':postal',$data['postal_code']??false,PDO::PARAM_INT);
+        $stmt->bindValue(':country',$data['country']??'Sri Lanka',PDO::PARAM_STR);
+        $stmt->bindValue(':default',$data['is_default']??false,PDO::PARAM_BOOL);
+        $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$row) throw new DatabaseException('Failed to create address');
         return $this->mapToModel($row);
     }
+public function update(int $id, array $data): ?AddressModel
+{
+    $allowedFields = [
+        'address_type',
+        'recipient_name',
+        'phone',
+        'address_line1',
+        'address_line2',
+        'city',
+        'state',
+        'postal_code',
+        'country',
+        'is_default',
+    ];
 
-    public function update(int $id, array $data): ?AddressModel
-    {
-        $sets = [];
-        $params = [':id' => $id];
+    $sets   = [];
+    $params = [':id' => $id];
+    $types  = []; // We'll track param types for bindValue()
 
-        $fields = [
-            'address_type', 'recipient_name', 'phone', 'address_line1', 'address_line2',
-            'city', 'state', 'postal_code', 'country', 'is_default'
-        ];
-
-        foreach ($fields as $field) {
-            if (isset($data[$field])) {
-                $sets[] = "$field = :$field";
-                $params[":$field"] = $data[$field];
-            }
+    foreach ($allowedFields as $field) {
+        if (!array_key_exists($field, $data)) {
+            continue;
         }
 
-        if (empty($sets)) return null;
+        $value = $data[$field];
 
-        $sql = "UPDATE user_addresses SET " . implode(', ', $sets) . ", updated_at = NOW() 
-                WHERE id = :id AND deleted_at IS NULL RETURNING *";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ? $this->mapToModel($row) : null;
+        // CRITICAL: Properly convert is_default to real boolean
+        if ($field === 'is_default') {
+            $value = filter_var($value, FILTER_VALIDATE_BOOLEAN); // → true or false
+        }
+        // Optional: Convert empty strings to null (except for is_default)
+        elseif (is_string($value) && trim($value) === '') {
+            $value = null;
+        }
+
+        $paramName = ":$field";
+        $sets[] = "$field = $paramName";
+        $params[$paramName] = $value;
+
+        // Explicitly set PDO param type for booleans
+        if ($field === 'is_default') {
+            $types[$paramName] = PDO::PARAM_BOOL;
+        } elseif ($value === null) {
+            $types[$paramName] = PDO::PARAM_NULL;
+        } elseif (is_int($value)) {
+            $types[$paramName] = PDO::PARAM_INT;
+        } else {
+            $types[$paramName] = PDO::PARAM_STR;
+        }
     }
 
+    if (empty($sets)) {
+        return null;
+    }
+
+    $sql = "UPDATE user_addresses 
+            SET " . implode(', ', $sets) . ", updated_at = NOW() 
+            WHERE id = :id AND deleted_at IS NULL 
+            RETURNING *";
+
+    $stmt = $this->pdo->prepare($sql);
+
+    foreach ($params as $param => $value) {
+        $type = $types[$param] ?? PDO::PARAM_STR;
+        $stmt->bindValue($param, $value, $type);
+    }
+
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $row ? $this->mapToModel($row) : null;
+}
     public function delete(int $id): bool
     {
         $stmt = $this->pdo->prepare(

@@ -145,6 +145,38 @@ class UserRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Search users by name, email, or phone
+     * @param string $query Search query
+     * @param int $limit
+     * @param int $offset
+     * @return array
+     */
+    public function searchUsers(string $query, int $limit = 50, int $offset = 0): array
+    {
+        $searchTerm = "%{$query}%";
+        $stmt = $this->pdo->prepare("
+            SELECT * FROM users 
+            WHERE deleted_at IS NULL 
+            AND (
+                name ILIKE :query 
+                OR email ILIKE :query 
+                OR phone ILIKE :query
+            )
+            ORDER BY created_at DESC 
+            LIMIT :limit OFFSET :offset
+        ");
+        $stmt->bindValue(':query', $searchTerm);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $users = [];
+        while ($row = $stmt->fetch()) {
+            $users[] = $this->mapToModel($row);
+        }
+        return $users;
+    }
     public function createAddress(int $userId, array $data): int
     {
         $sql = "

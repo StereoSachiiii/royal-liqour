@@ -6,6 +6,7 @@ require_once __DIR__ . '/../repositories/AddressRepository.php';
 require_once __DIR__ . '/../validators/AddressValidator.php';
 require_once __DIR__ . '/../exceptions/ValidationException.php';
 require_once __DIR__ . '/../exceptions/NotFoundException.php';
+require_once __DIR__ . '/../models/AddressModel.php';
 require_once __DIR__ . '/../exceptions/DatabaseException.php';
 
 class AddressController
@@ -68,11 +69,16 @@ class AddressController
         }
     }
 
-    public function create(int $userId, array $data): array
+    public function create( array $data): array
     {
-        return $this->handle(function () use ($userId, $data) {
+        return $this->handle(function () use ( $data) {
             AddressValidator::validateCreate($data);
-            $address = $this->repo->create($userId, $data);
+            $address = $this->repo->getById($data['user_id']);
+            if($address){
+                $data['is_default'] = false;
+            }
+          
+            $address = $this->repo->create( $data);
             return $this->success('Address created', $address->toArray(), 201);
         });
     }
@@ -94,11 +100,18 @@ class AddressController
             return $this->success('Address retrieved', $address->toArray());
         });
     }
-
+    public function getUserAddressesAll(int $id): array
+    {
+        return $this->handle(function () use ($id) {
+            $addresses = $this->repo->getUserAddressesAll($id);
+            $data = array_map(fn($a) => $a->toArray(), $addresses);
+            return $this->success('Address retrieved', $data);
+        });
+    }
     public function update(int $id, array $data): array
     {
         return $this->handle(function () use ($id, $data) {
-            AddressValidator::validateUpdate($data);
+            //AddressValidator::validateUpdate($data);
             $updated = $this->repo->update($id, $data);
             if (!$updated) throw new NotFoundException('Address not found');
             return $this->success('Address updated', $updated->toArray());

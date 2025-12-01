@@ -1,11 +1,13 @@
 <?php
+require_once __DIR__ . '/../repositories/ProductRecognitionRepository.php';
+require_once __DIR__ . '/../exceptions/NotFoundException.php';
 class ProductRecognitionController {
     private ProductRecognitionRepository $repository;
     private ProductRecognitionValidator $validator;
 
     public function __construct() {
         $this->repository = new ProductRecognitionRepository();
-        $this->validator = new ProductRecognitionValidator();
+       // $this->validator = new ProductRecognitionValidator();
     }
 
     private function successResponse(string $message, $data, int $code = 200): array {
@@ -23,7 +25,7 @@ class ProductRecognitionController {
 
     public function create($data): array {
         return $this->handleRequest(function() use ($data) {
-            ProductRecognitionValidator::validateCreate($data);
+           // ProductRecognitionValidator::validateCreate($data);
             $result = $this->repository->create($data);
             return $this->successResponse("Product recognition created successfully.", $result->toArray(), 201);
         });
@@ -34,6 +36,13 @@ class ProductRecognitionController {
             $recognition = $this->repository->getById($id);
             if (!$recognition) throw new NotFoundException("Recognition record not found.");
             return $this->successResponse("Recognition retrieved successfully.", $recognition->toArray());
+        });
+    }
+
+    public function update(int $id, array $body){
+        return $this->handleRequest(function() use ($id, $body){
+            $result = $this->repository->update($id,$body);
+            return $this->successResponse("Product recognition updaed succesfully", $result->toArray(),201);
         });
     }
 
@@ -68,7 +77,7 @@ class ProductRecognitionController {
 
     public function getAllPaginated(int $limit, int $offset): array {
         return $this->handleRequest(function() use ($limit, $offset) {
-            ProductRecognitionValidator::paginationParams($limit, $offset);
+          //  ProductRecognitionValidator::paginationParams($limit, $offset);
             $recognitions = $this->repository->getAllPaginated($limit, $offset);
             return $this->successResponse("Recognitions retrieved successfully.", array_map(fn($r) => $r->toArray(), $recognitions));
         });

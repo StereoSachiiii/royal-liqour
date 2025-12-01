@@ -98,12 +98,11 @@ try {
             AuthMiddleware::requireAdmin();
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('category_update', 5, 60);
+            $body = json_decode(file_get_contents('php://input'), associative: true) ?? [];
+            if (!isset($_GET['id'])&& !isset($body)) throw new Exception("Category ID required", 400);
 
-            if (!isset($_GET['id'])) throw new Exception("Category ID required", 400);
-
-            $id = (int)$_GET['id'];
-            $body = json_decode(file_get_contents('php://input'), true) ?? [];
-            $result = $controller->update($id, $body);
+            $id = $_GET['id'] ?? $body['id'];
+            $result = $controller->update(intval($id), $body);
             JsonMiddleware::sendResponse($result, $result['code']);
             break;
 

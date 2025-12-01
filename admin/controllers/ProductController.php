@@ -126,9 +126,14 @@ class ProductController
     public function search(string $query, int $limit = 50, int $offset = 0): array
     {
         return $this->handle(function () use ($query, $limit, $offset) {
-            if (empty(trim($query))) throw new ValidationException('Search query required');
+            if (empty(trim($query))) {
+                $products = $this->repo->getAll($limit, $offset);
+                $data= array_map(fn($p)=>$p->toArray(),$products);
+            }else{
             $products = $this->repo->search($query, $limit, $offset);
             $data = array_map(fn($p) => $p->toArray(), $products);
+            }
+        
             return $this->success('Search results', $data);
         });
     }
@@ -157,17 +162,6 @@ class ProductController
             $existing = $this->repo->getByIdAdmin($id);
             if (!$existing) throw new NotFoundException('Product not found');
 
-            if (isset($data['name']) && $data['name'] !== $existing->getName()) {
-                if ($this->repo->getByName($data['name'])) {
-                    throw new DuplicateException('Product name already exists');
-                }
-            }
-
-            if (isset($data['slug']) && $data['slug'] !== $existing->getSlug()) {
-                if ($this->repo->getBySlug($data['slug'])) {
-                    throw new DuplicateException('Product slug already exists');
-                }
-            }
 
             $updated = $this->repo->update($id, $data);
             if (!$updated) throw new DatabaseException('Update failed');

@@ -1,31 +1,29 @@
 <?php require_once __DIR__.'/../../header/header.php';?>
 
 <div class="order-history-container">
-    <div class="cart-header">
-        <h1>My Cart</h1>
-        <div class="cart-summary">
-            <span class="cart-count">0 items</span>
-            <span class="cart-total">$0.00</span>
+    <div class="order-header">
+        <h1>My Orders</h1>
+        <div class="order-summary">
+            <span class="order-count">0 orders</span>
+            <span class="order-total">$0.00</span>
         </div>
     </div>
 
-    <div class="cart-grid" id="cartGrid">
-        <div class="empty-state">
+    <div class="order-grid" id="orderGrid">
+        <div class="order-empty-state">
             <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                <path d="M9 2v4m6-4v4M4 9h16M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path>
             </svg>
-            <p>Your cart is empty</p>
+            <p>No orders yet</p>
         </div>
     </div>
 </div>
 
-<div class="cart-modal-overlay" id="cartModalOverlay">
-    <div class="cart-modal">
-        <div class="modal-header">
-            <h2>Cart Details</h2>
-            <button class="close-modal" id="closeModal">
+<div class="order-modal-overlay" id="orderModalOverlay">
+    <div class="order-modal">
+        <div class="order-modal-header">
+            <h2>Order Details</h2>
+            <button class="order-close-modal" id="closeModal">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -33,136 +31,172 @@
             </button>
         </div>
         
-        <div class="modal-body" id="modalBody">
-            <div class="cart-items-list" id="cartItemsList">
-                <div class="loading-spinner">
-                    <div class="spinner"></div>
+        <div class="order-modal-body" id="modalBody">
+            <div class="order-items-list" id="orderItemsList">
+                <div class="order-loading-spinner">
+                    <div class="order-spinner"></div>
                 </div>
             </div>
             
-            <div class="cart-summary-section">
-                <div class="summary-row">
+            <div class="order-summary-section">
+                <div class="order-summary-row">
                     <span>Subtotal</span>
-                    <span class="summary-value" id="modalSubtotal">$0.00</span>
+                    <span class="order-summary-value" id="modalSubtotal">$0.00</span>
                 </div>
-                <div class="summary-row">
+                <div class="order-summary-row">
                     <span>Tax</span>
-                    <span class="summary-value" id="modalTax">$0.00</span>
+                    <span class="order-summary-value" id="modalTax">$0.00</span>
                 </div>
-                <div class="summary-row total">
+                <div class="order-summary-row total">
                     <span>Total</span>
-                    <span class="summary-value" id="modalTotal">$0.00</span>
+                    <span class="order-summary-value" id="modalTotal">$0.00</span>
                 </div>
             </div>
         </div>
         
-        <div class="modal-footer">
-            <button class="btn-secondary" id="continueShopping">Continue Shopping</button>
-            <button class="btn-primary" id="checkoutBtn">Proceed to Checkout</button>
+        <div class="order-modal-footer">
+            <button class="order-btn-secondary" id="closeOrderDetails">Close</button>
+            <button class="order-btn-primary" id="trackOrderBtn">Track Order</button>
         </div>
     </div>
 </div>
 
+<script type="module">
+import {fetchOrders} from '../../utils/orders.js';
+import {fetchOrderItems} from '../../utils/order-items.js'
+import {fetchUserAddresses, formatAddress} from '../../utils/addresses.js'
+const getStatusClass = (status) => {
+    const statusMap = {
+        'pending': 'pending',
+        'processing': 'pending',
+        'shipped': 'active',
+        'delivered': 'active',
+        'cancelled': 'inactive'
+    };
+    return statusMap[status] || 'pending';
+};
 
+const renderOrders = async () => {
+    const orderGrid = document.getElementById('orderGrid');
+    const orderCount = document.querySelector('.order-count');
+    const orderTotal = document.querySelector('.order-total');
 
-<script>
-// Complete fixed script - replace your entire script section with this
-
-const renderCart = async () => {
-    const cartGrid = document.getElementById('cartGrid');
-    const cartCount = document.querySelector('.cart-count');
-    const cartTotal = document.querySelector('.cart-total');
+    const orders = await fetchOrders(<?= $session->getUserId(); ?>);
     
-    const carts = await fetchCarts(6);
+    console.log(orders);
     
-    if (carts.error || !carts || carts.length === 0) {
-        cartGrid.innerHTML = `
-            <div class="empty-state">
+    if (orders.error || !orders || orders.length <= 0) {
+        orderGrid.innerHTML = `
+            <div class="order-empty-state">
                 <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="9" cy="21" r="1"></circle>
-                    <circle cx="20" cy="21" r="1"></circle>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    <path d="M9 2v4m6-4v4M4 9h16M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path>
                 </svg>
-                <p>Your cart is empty</p>
+                <p>No orders yet</p>
             </div>
         `;
         return;
     }
     
-    const totalAmount = carts.reduce((sum, cart) => sum + parseFloat(cart.total || 0), 0);
-    cartCount.textContent = `${carts.length} ${carts.length === 1 ? 'cart' : 'carts'}`;
-    cartTotal.textContent = `$${totalAmount.toFixed(2)}`;
+    const totalAmount = orders.reduce((sum, order) => sum + parseFloat(order.total_cents || 0), 0);
+    orderCount.textContent = `${orders.length} order${orders.length !== 1 ? 's' : ''}`;
+    orderTotal.textContent = `$${(totalAmount / 100).toFixed(2)}`;
     
-    cartGrid.innerHTML = carts.map(cart => `
-        <div class="cart-card" data-cart-id="${cart.id}">
-            <div class="cart-card-header">
-                <span class="cart-id">Cart #${cart.id}</span>
-                <span class="cart-status ${cart.is_active ? '' : 'inactive'}">
-                    ${cart.is_active ? 'Active' : 'Inactive'}
+    let html = ''
+
+    html = await Promise.all(orders.map(async (order) => {
+        return`
+        <div class="order-card" data-order-id="${order.id}">
+            <div class="order-card-header">
+                <span class="order-number">${order.order_number}</span>
+                <span class="order-status ${getStatusClass(order.status)}">
+                    ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                 </span>
             </div>
-            <div class="cart-info">
-                <div class="cart-info-row">
-                    <label>Session</label>
-                    <span>${cart.session_id}</span>
+            <div class="order-info">
+                <div class="order-info-row">
+                    <label>Order ID</label>
+                    <span>#${order.id}</span>
                 </div>
-                <div class="cart-info-row">
-                    <label>Items</label>
-                    <span>${cart.total} items</span>
+                <div class="order-info-row">
+                    <label>Cart ID</label>
+                    <span>#${order.cart_id}</span>
+                </div>
+                <div class="order-info-row">
+                    <label>Total Amount</label>
+                    <span class="order-amount">$${(parseFloat(order.total_cents || 0) / 100).toFixed(2)}</span>
                 </div>
             </div>
-            <div class="cart-total-price">
-                $${parseFloat(cart.total || 0).toFixed(2)}
-            </div>
-            <div class="cart-date">
-                Created ${new Date(cart.created_at).toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                })}
+            <div class="order-dates">
+                <div class="order-date-item">
+                    <label>Ordered</label>
+                    <span>${new Date(order.created_at).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</span>
+                </div>
+                ${order.paid_at ? `
+                <div class="order-date-item">
+                    <label>Paid</label>
+                    <span>${new Date(order.paid_at).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric'
+                    })}</span>
+                </div>
+                ` : ''}
+                ${order.shipped_at ? `
+                <div class="order-date-item">
+                    <label>Shipped</label>
+                    <span>${new Date(order.shipped_at).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric'
+                    })}</span>
+                </div>
+                ` : ''}
+                ${order.delivered_at ? `
+                <div class="order-date-item">
+                    <label>Delivered</label>
+                    <span>${new Date(order.delivered_at).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric'
+                    })}</span>
+                </div>
+                ` : ''}
+                ${ `
+                <div class="order-date-item">
+                    <label>Billing address</label>
+                    <span>${await fetchUserAddresses(order.billing_address_id) }</span>
+                </div>
+                ` }
+                ${  `
+                <div class="order-date-item">
+                    <label>Shipping address</label>
+                    <span>${await fetchUserAddresses(order.shipping_address_id)}</span>
+                </div>
+                ` }
             </div>
         </div>
-    `).join('');
-    
-    document.querySelectorAll('.cart-card').forEach(card => {
+    `}));
+
+    const OrderGridhtml = html.join('')
+    orderGrid.innerHTML = OrderGridhtml
+    document.querySelectorAll('.order-card').forEach(card => {
         card.addEventListener('click', () => {
-            const cartId = card.dataset.cartId;
-            openCartModal(cartId);
+            const orderId = card.dataset.orderId;
+            openOrderModal(orderId);
         });
     });
 };
 
-const fetchCarts = async (id) => {
-    try {
-        const response = await fetch(`http://localhost/royal-liquor/admin/api/cart.php?user_id=${id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin'
-        });
-
-        if (!response.ok) {
-            throw Error(`Error fetching existing carts ${response.statusText}`);
-        }
-        const body = await response.json();
-        return body.data;
-    } catch (error) {
-        return { error: error };
-    }
-};
-
-const openCartModal = async (cartId) => {
-    const overlay = document.getElementById('cartModalOverlay');
-    const itemsList = document.getElementById('cartItemsList');
+const openOrderModal = async (orderId) => {
+    const overlay = document.getElementById('orderModalOverlay');
+    const itemsList = document.getElementById('orderItemsList');
     
-    // First set display and remove hidden class
     overlay.style.display = 'flex';
-    
-    // Force a reflow to ensure display change is registered
     overlay.offsetHeight;
     
-    // Then add active class to trigger animation
     setTimeout(() => {
         overlay.classList.add('active');
     }, 10);
@@ -170,68 +204,60 @@ const openCartModal = async (cartId) => {
     document.body.style.overflow = 'hidden';
     
     itemsList.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner"></div>
+        <div class="order-loading-spinner">
+            <div class="order-spinner"></div>
         </div>
     `;
     
-    const items = await fetchCartItems(cartId);
+    const items = await fetchOrderItems(orderId);
+    console.log(items);
     
     if (items.error || !items || items.length === 0) {
         itemsList.innerHTML = `
-            <div class="empty-state">
-                <p>No items in this cart</p>
+            <div class="order-empty-state">
+                <p>No items in this order</p>
             </div>
         `;
+        document.getElementById('modalSubtotal').textContent = '$0.00';
+        document.getElementById('modalTax').textContent = '$0.00';
+        document.getElementById('modalTotal').textContent = '$0.00';
         return;
     }
     
-    const subtotal = items.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+    const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.price_cents || 0) * item.quantity / 100), 0);
     const tax = subtotal * 0.1;
     const total = subtotal + tax;
+   
     
     document.getElementById('modalSubtotal').textContent = `$${subtotal.toFixed(2)}`;
     document.getElementById('modalTax').textContent = `$${tax.toFixed(2)}`;
     document.getElementById('modalTotal').textContent = `$${total.toFixed(2)}`;
     
     itemsList.innerHTML = items.map(item => `
-        <div class="cart-item">
-            <div class="item-image"></div>
-            <div class="item-details">
-                <div class="item-name">Item #${item.id}</div>
-                <div class="item-meta">Session: ${item.session_id} • Qty: ${item.total}</div>
-                <div class="item-meta">Updated: ${new Date(item.updated_at).toLocaleDateString()}</div>
+        <div class="order-item">
+            <div class="order-item-image">
+            <img src="${item.product_image_url}" >
             </div>
-            <div class="item-price">$${parseFloat(item.total || 0).toFixed(2)}</div>
+            <div class="order-item-details">
+                <div class="order-item-name">Product #${item.product_name}</div>
+                <div class="order-item-meta">Quantity: ${item.quantity} × $${(parseFloat(item.price_cents || 0)/100 ).toFixed(2)}</div>
+                <div class="order-item-meta">Added: ${new Date(item.created_at).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}</div>
+            </div>
+            <div class="order-item-price">$${((parseFloat(item.price_cents/100 || 0) * item.quantity) ).toFixed(2)}</div>
         </div>
     `).join('');
 };
 
-const fetchCartItems = async (cartId) => {
-    try {
-        const response = await fetch(`http://localhost/royal-liquor/admin/api/cart-items.php?cart_id=${cartId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin'
-        });
 
-        if (!response.ok) {
-            throw Error(`Error fetching cart items ${response.statusText}`);
-        }
-        const body = await response.json();
-        return body.data;
-    } catch (error) {
-        return { error: error };
-    }
-};
-
-const closeCartModal = () => {
-    const overlay = document.getElementById('cartModalOverlay');
+const closeOrderModal = () => {
+    const overlay = document.getElementById('orderModalOverlay');
     overlay.classList.remove('active');
     
-    // Wait for animation to complete before hiding
     setTimeout(() => {
         overlay.style.display = 'none';
     }, 400);
@@ -240,19 +266,19 @@ const closeCartModal = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    renderCart();
+    renderOrders();
     
-    document.getElementById('closeModal').addEventListener('click', closeCartModal);
-    document.getElementById('continueShopping').addEventListener('click', closeCartModal);
+    document.getElementById('closeModal').addEventListener('click', closeOrderModal);
+    document.getElementById('closeOrderDetails').addEventListener('click', closeOrderModal);
     
-    document.getElementById('cartModalOverlay').addEventListener('click', (e) => {
-        if (e.target.id === 'cartModalOverlay') {
-            closeCartModal();
+    document.getElementById('orderModalOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'orderModalOverlay') {
+            closeOrderModal();
         }
     });
     
-    document.getElementById('checkoutBtn').addEventListener('click', () => {
-        console.log('Proceeding to checkout');
+    document.getElementById('trackOrderBtn').addEventListener('click', () => {
+        console.log('Tracking order');
     });
 });
 </script>

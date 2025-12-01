@@ -4,6 +4,8 @@ require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/CsrfMiddleware.php';
 require_once __DIR__ . '/../middleware/RateLimitMiddleware.php';
 require_once __DIR__ . '/../middleware/JsonMiddleware.php';
+require_once __DIR__ . '/../../core/Session.php';
+
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: http://localhost:3000');
@@ -15,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
-
+$session = Session::getInstance();
 $controller = new AddressController();
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -32,10 +34,10 @@ try {
                 break;
             }
 
-            $type = $_GET['type'] ?? null;
-            $limit = (int)($_GET['limit'] ?? 50);
-            $offset = (int)($_GET['offset'] ?? 0);
-            $result = $controller->getAddresses($userId, $type, $limit, $offset);
+
+          
+            $userId = $_GET['user_id'];
+            $result = $controller->getUserAddressesAll((int)$userId);
             JsonMiddleware::sendResponse($result, 200);
             break;
 
@@ -44,7 +46,7 @@ try {
             RateLimitMiddleware::check('address_create', 10, 60);
 
             $body = json_decode(file_get_contents('php://input'), true) ?? [];
-            $result = $controller->create($userId, $body);
+            $result = $controller->create( $body);
             JsonMiddleware::sendResponse($result, $result['code']);
             break;
 
@@ -52,10 +54,11 @@ try {
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('address_update', 10, 60);
 
-            if (!isset($_GET['id'])) throw new Exception("Address ID required", 400);
-
-            $id = (int)$_GET['id'];
             $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            if (!isset($_GET['id']) && !isset($body['id'])) throw new Exception("Address ID required", 400);
+
+            $id = isset($_GET['id']) ? (int)$_GET['id'] : (int)$body['id'];
+            
             $result = $controller->update($id, $body);
             JsonMiddleware::sendResponse($result, $result['code']);
             break;

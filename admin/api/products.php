@@ -48,7 +48,7 @@ try {
             }
 
             if (isset($_GET['search'])) {
-                $query = (string)$_GET['search'];
+                $query = (string)$_GET['search'] ??'';
                 $limit = (int)($_GET['limit'] ?? 50);
                 $offset = (int)($_GET['offset'] ?? 0);
                 $result = $controller->search($query, $limit, $offset);
@@ -84,11 +84,14 @@ try {
             AuthMiddleware::requireAdmin();
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('product_update', 5, 60);
-
-            if (!isset($_GET['id'])) throw new Exception("Product ID required", 400);
-
-            $id = (int)$_GET['id'];
             $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            if (!isset($_GET['id']) && !isset($body['id'])) throw new Exception("Product ID required!", 400);
+
+            $id = $_GET['id'] ?? $body['id'] ?? null;
+            if (!$id) throw new Exception("Product ID required", 400);
+            $id = (int)$id;
+
+            
             $result = $controller->update($id, $body);
             JsonMiddleware::sendResponse($result, $result['code']);
             break;

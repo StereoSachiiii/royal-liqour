@@ -38,7 +38,7 @@ try {
                 JsonMiddleware::sendResponse($result, $result['code']);
                 break;
             }
-
+            //get by user id
             if (isset($_GET['user_id'])) {
                 $userId = (int)$_GET['user_id'];
                 $result = $controller->getActiveByUser($userId);
@@ -74,11 +74,11 @@ try {
         case 'PUT':
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('cart_update', 10, 60);
+            $body = json_decode(json: file_get_contents('php://input'), associative: true) ?? [];
 
-            if (!isset($_GET['id'])) throw new Exception("Cart ID required", 400);
+            if (!isset($_GET['id'])&&!isset($body['id'])) throw new Exception("Cart ID required", 400);
 
-            $id = (int)$_GET['id'];
-            $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            $id = (int)($_GET['id'] ?? $body['id']);
             $result = $controller->update($id, $body);
             JsonMiddleware::sendResponse($result, $result['code']);
             break;

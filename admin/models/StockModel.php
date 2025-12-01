@@ -4,13 +4,13 @@ declare(strict_types=1);
 class StockModel
 {
     public function __construct(
-        private ?int $id = null,
-        private ?int $product_id = null,
-        private ?int $warehouse_id = null,
-        private int $quantity = 0,
-        private int $reserved = 0,
-        private ?string $created_at = null,
-        private ?string $updated_at = null
+        public ?int $id = null,
+        public ?int $product_id = null,
+        public ?int $warehouse_id = null,
+        public int $quantity = 0,
+        public int $reserved = 0,
+        public ?string $created_at = null,
+        public ?string $updated_at = null
     ) {}
 
     // Getters

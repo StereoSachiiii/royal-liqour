@@ -97,6 +97,11 @@
         flex-direction: column;
         gap: 10px;
     }
+
+    #quantity{
+        width: 4rem;
+        height: 2rem;
+    }
     .data{
         display: flex;
         justify-content: space-between;

@@ -55,6 +55,17 @@ try {
 
             throw new Exception("Invalid GET parameters", 400);
 
+        case 'PUT':
+            AuthMiddleware::requireAdmin();
+            CsrfMiddleware::verifyCsrf();
+            RateLimitMiddleware::check('order_item_update', 20, 60);
+            $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            if (!isset($_GET['id']) && !isset($body['id'])) throw new Exception("Order item ID required", 400);
+            $id = $_GET['id'] ?? $body['id'];
+            $result = $controller->update($id, $body);
+            JsonMiddleware::sendResponse($result, $result['code']);
+            break;
+
         case 'POST':
             AuthMiddleware::requireAdmin();
             CsrfMiddleware::verifyCsrf();

@@ -154,6 +154,7 @@ $csrfToken = $session->getCsrfInstance()->getToken();
                 });
 
                 const data = await res.json();
+                
            
 
                 if (data.success) {

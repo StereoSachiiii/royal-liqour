@@ -18,7 +18,68 @@ class StockController
         $this->repo = new StockRepository();
         $this->session = Session::getInstance();
     }
+    public function reserveStock(int $orderId): array
+{
+    return $this->handle(function () use ($orderId) {
+        $this->repo->reserveStock($orderId);
+        return $this->success('Stock reserved for order');
+    });
+}
 
+
+public function getAvailableStock(int $productId): array
+{
+    return $this->handle(function () use ($productId) {
+        $available = $this->repo->getAvailableStockByProduct($productId);
+        
+        return $this->success('Available stock retrieved', [
+            'product_id' => $productId,
+            'available' => $available,
+            'in_stock' => $available > 0
+        ]);
+    });
+}
+public function confirmPayment(int $orderId): array
+{
+    return $this->handle(function () use ($orderId) {
+        $this->repo->confirmPayment($orderId);
+        return $this->success('Payment confirmed, stock deducted');
+    });
+}
+public function adjustStock(int $productId, int $warehouseId, int $adjustment, ?string $reason = null): array
+{
+    return $this->handle(function () use ($productId, $warehouseId, $adjustment, $reason) {
+        $stock = $this->repo->getByProductAndWarehouse($productId, $warehouseId);
+        if (!$stock) throw new NotFoundException('Stock not found');
+        
+        $newQuantity = $stock->getQuantity() + $adjustment;
+        if ($newQuantity < $stock->getReserved()) {
+            throw new ValidationException('Cannot reduce quantity below reserved amount');
+        }
+        
+        $updated = $this->repo->update($stock->getId(), ['quantity' => $newQuantity]);
+        
+        // Optional: log the adjustment
+        error_log("Stock adjusted: Product $productId, Warehouse $warehouseId, Change: $adjustment, Reason: $reason");
+        
+        return $this->success('Stock adjusted', $updated->toArray());
+    });
+}
+public function cancelOrder(int $orderId): array
+{
+    return $this->handle(function () use ($orderId) {
+        $this->repo->cancelOrder($orderId);
+        return $this->success('Order cancelled, stock returned');
+    });
+}
+
+public function refundOrder(int $orderId): array
+{
+    return $this->handle(function () use ($orderId) {
+        $this->repo->refundOrder($orderId);
+        return $this->success('Order refunded, stock returned');
+    });
+}
     private function success(string $message, $data = [], int $code = 200): array
     {
         return [

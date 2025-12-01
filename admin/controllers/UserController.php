@@ -84,11 +84,18 @@ class UserController
             if ($this->repo->findByEmail($data['email'])) {
                 throw new ValidationException('Email already registered', ['errors' => ['email' => 'Taken']]);
             }
-
-            $user = $this->repo->create(
+            if(isset($data['is_admin'])) {
+               $user = $this->repo->createAdmin(
                 $data['name'],
                 $data['email'],
                 $data['phone'] ?? null,
+                password_hash($data['password'], PASSWORD_BCRYPT)
+               );
+            } else {
+                $user = $this->repo->create(
+                    $data['name'],
+                    $data['email'],
+                    $data['phone'] ?? null,
                 password_hash($data['password'], PASSWORD_BCRYPT)
             );
 
@@ -98,7 +105,7 @@ class UserController
                 'email'    => $user->getEmail(),
                 'is_admin' => $user->isAdmin()
             ]);
-
+        }
             return $this->success('Registered successfully', $user->toArray(), 201);
         });
     }
@@ -190,7 +197,25 @@ class UserController
             return $this->success('Address created', ['address_id' => $id], 201);
         });
     }
+    public function searchUsers(string $query, int $limit = 50, int $offset = 0): array
+    {
+        return $this->handle(function () use ($query, $limit, $offset) {
+            // if (!$this->session->isAdmin()) {
+            //     throw new UnauthorizedException('Admin access required');
+            // }
 
+            if (empty(trim($query))) {
+                $users = $this->repo->getAllUsers($limit,$offset);
+                $data = array_map(fn($u) => $u->toArray(), $users);
+                
+            }
+            else{
+            $users = $this->repo->searchUsers(trim($query), $limit, $offset);
+            $data = array_map(fn($u) => $u->toArray(), $users);
+            }
+            return $this->success('Search results retrieved', $data);
+        });
+    }
     public function getAddresses(int $userId, ?string $type = null): array
     {
         return $this->handle(function () use ($userId, $type) {

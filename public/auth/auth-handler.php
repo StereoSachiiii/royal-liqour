@@ -37,12 +37,19 @@ try {
                 'confirm_password' => $input['confirm_password'] ?? ''
             ]);
             JsonMiddleware::sendResponse($result, $result['code'] ?? 400);
+            
             break;
 
         case 'login':
             $result = $controller->login([
                 'email'    => $input['email'] ?? '',
                 'password' => $input['password'] ?? ''
+            ]);
+            $session->login([
+                'user_id' => $result['data']['id'],
+                 'name' => $result['data']['name'],
+                 'email' => $result['data']['email'],
+                 'is_admin' => $result['data']['is_admin']
             ]);
             JsonMiddleware::sendResponse($result, $result['code'] ?? 401);
             break;

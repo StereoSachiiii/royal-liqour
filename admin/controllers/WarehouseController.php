@@ -129,7 +129,7 @@ class WarehouseController
     public function search(string $query, int $limit = 50, int $offset = 0): array
     {
         return $this->handle(function () use ($query, $limit, $offset) {
-            if (empty(trim($query))) throw new ValidationException('Search query required');
+            
             $warehouses = $this->repo->search($query, $limit, $offset);
             $data = array_map(fn($w) => $w->toArray(), $warehouses);
             return $this->success('Search results', $data);

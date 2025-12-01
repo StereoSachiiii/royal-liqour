@@ -47,6 +47,14 @@ class PaymentRepository
         return (int)$stmt->fetchColumn();
     }
 
+
+    public function hardDelete(int $id): bool
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM payments WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        return $stmt->rowCount() > 0;
+    }
+
     public function create(array $data): PaymentModel
     {
         $stmt = $this->pdo->prepare(
