@@ -18,8 +18,6 @@ Inventory & Stock: Mechanism for monitoring and controlling stock levels (StockC
 
 Admin Panel: A complete and fully operational Admin Panel for controlling all entities and examining reports.
 
-📝 Critical Next Steps & Technical Debt (Post-Exams Focus)
-
 Although the system can be deployed, there are still some essential refactoring and advanced feature tasks that need to be worked on for the long-term stability, security, and scalability.
 
 1. API & Backend Refactoring
@@ -29,3 +27,6 @@ The initiated task will help in making the core PHP logic more robust and easier
 Validation Refactor: Merge and standardize validation logic across all the Validator files (admin/validators/) to guarantee consistency and eliminate security vulnerabilities.
 
 User API Endpoint Refactor: Break down and clarify user-related API endpoints to observe the single responsibility principle (e.g., dedicated endpoints for Auth and Profile).
+
+Took 41k lines of code. but it served its purpose of learning to implement session handling securely , using middleware for structuring , REST API design. Database denormalization , OOP design for a full system with 18 models, indexing ACID properties, triggers, rate limitng , validation, refractoring, MVC + repository pattern, SSE. this also includes a Single Page Application for the admin page using React Like pattern without state(essentially conditional rendering) debounces queries, searching, sorting. After proposed refractoring is done this system will be good to go and could be implemented to use with upto multiple thousand users. This is still a work in progress. 
+
