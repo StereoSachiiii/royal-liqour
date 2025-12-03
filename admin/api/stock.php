@@ -10,7 +10,6 @@ header('Access-Control-Allow-Origin: http://localhost:3000');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 header('Access-Control-Allow-Credentials: true');
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -20,119 +19,152 @@ $controller = new StockController();
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-                        switch ($method) {
-                            case 'GET':
-                                if (isset($_GET['available']) && isset($_GET['product_id'])) {
-                                    AuthMiddleware::requireAdmin();
-                            $productId = (int)$_GET['product_id'];
-                            $result = $controller->getAvailableStock($productId);
-                            JsonMiddleware::sendResponse($result, 200);
-                            break;
-                                }    
-                                
-                                if (!isset($_GET['id']) && !isset($_GET['product_id']) && !isset($_GET['warehouse_id']) && !isset($_GET['count'])) {
-                                    $limit = (int)($_GET['limit'] ?? 50);
-                                    $offset = (int)($_GET['offset'] ?? 0);
-                                    $result = $controller->getAll($limit, $offset);
-                                    JsonMiddleware::sendResponse($result, 200);
-                                    break;
-                                }
+    switch ($method) {
+        case 'GET':
+            // Get available stock for a product (for frontend)
+            if (isset($_GET['available']) && isset($_GET['product_id'])) {
+                $productId = (int)$_GET['product_id'];
+                $result = $controller->getAvailableStock($productId);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
+            
+            // Get stock summary for a product (detailed breakdown)
+            if (isset($_GET['summary']) && isset($_GET['product_id'])) {
+                $productId = (int)$_GET['product_id'];
+                $result = $controller->getStockSummary($productId);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
+            
+            // Get all stock entries (paginated)
+            if (!isset($_GET['id']) && !isset($_GET['product_id']) && !isset($_GET['warehouse_id']) && !isset($_GET['count'])) {
+                $limit = (int)($_GET['limit'] ?? 50);
+                $offset = (int)($_GET['offset'] ?? 0);
+                $result = $controller->getAll($limit, $offset);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
 
-                                if (isset($_GET['id'])) {
-                                    $id = (int)$_GET['id'];
-                                    if ($id <= 0) throw new Exception("Stock ID required", 400);
-                                    $result = $controller->getById($id);
-                                    JsonMiddleware::sendResponse($result, $result['code']);
-                                    break;
-                                }
+            // Get by ID
+            if (isset($_GET['id'])) {
+                $id = (int)$_GET['id'];
+                if ($id <= 0) throw new Exception("Stock ID required", 400);
+                $result = $controller->getById($id);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
 
-                                if (isset($_GET['product_id']) && isset($_GET['warehouse_id'])) {
-                                    $productId = (int)$_GET['product_id'];
-                                    $warehouseId = (int)$_GET['warehouse_id'];
-                                    $result = $controller->getByProductWarehouse($productId, $warehouseId);
-                                    JsonMiddleware::sendResponse($result, $result['code']);
-                                    break;
-                                }
+            // Get by product AND warehouse
+            if (isset($_GET['product_id']) && isset($_GET['warehouse_id'])) {
+                $productId = (int)$_GET['product_id'];
+                $warehouseId = (int)$_GET['warehouse_id'];
+                $result = $controller->getByProductWarehouse($productId, $warehouseId);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
 
-                                if (isset($_GET['product_id'])) {
-                                    $productId = (int)$_GET['product_id'];
-                                    $result = $controller->getByProduct($productId);
-                                    JsonMiddleware::sendResponse($result, 200);
-                                    break;
-                                }
+            // Get by product only
+            if (isset($_GET['product_id'])) {
+                $productId = (int)$_GET['product_id'];
+                $result = $controller->getByProduct($productId);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
 
-                                if (isset($_GET['warehouse_id'])) {
-                                    $warehouseId = (int)$_GET['warehouse_id'];
-                                    $result = $controller->getByWarehouse($warehouseId);
-                                    JsonMiddleware::sendResponse($result, 200);
-                                    break;
-                                }
+            // Get by warehouse only
+            if (isset($_GET['warehouse_id'])) {
+                $warehouseId = (int)$_GET['warehouse_id'];
+                $result = $controller->getByWarehouse($warehouseId);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
 
-                                if (isset($_GET['count']) && $_GET['count'] === 'true') {
-                                    $result = $controller->count();
-                                    JsonMiddleware::sendResponse($result, 200);
-                                    break;
-                                }
+            // Get count
+            if (isset($_GET['count']) && $_GET['count'] === 'true') {
+                $result = $controller->count();
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
 
-                                throw new Exception("Invalid GET parameters", 400);
+            throw new Exception("Invalid GET parameters", 400);
 
-                            case 'POST':
-                                CsrfMiddleware::verifyCsrf();
-                                
-                                $body = json_decode(file_get_contents('php://input'), true) ?? [];
-                                
-                                // Check for order operations (action + order_id)
-                                if (isset($body['action']) && isset($body['order_id'])) {
-                                    RateLimitMiddleware::check('stock_order_action', 10, 60);
-                                    
-                                    $orderId = (int)$body['order_id'];
-                                    if ($orderId <= 0) throw new Exception("Valid order ID required", 400);
-                                    
-                                    $action = $body['action'];
-                                    
-                                    switch ($action) {
-                                        case 'reserve':
-                                            $result = $controller->reserveStock($orderId);
-                                            break;
-                                        case 'confirm':
-                                            $result = $controller->confirmPayment($orderId);
-                                            break;
-                                        case 'cancel':
-                                            $result = $controller->cancelOrder($orderId);
-                                            break;
-                                        case 'refund':
-                                            $result = $controller->refundOrder($orderId);
-                                            break;
-                                        default:
-                                            throw new Exception("Invalid action. Use: reserve, confirm, cancel, refund", 400);
-                                    }
-                                                   
+        case 'POST':
+            CsrfMiddleware::verifyCsrf();
+            
+            $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            
+            // ORDER OPERATIONS (action + order_id)
+            if (isset($body['action']) && isset($body['order_id'])) {
+                RateLimitMiddleware::check('stock_order_action', 10, 60);
+                
+                $orderId = (int)$body['order_id'];
+                if ($orderId <= 0) throw new Exception("Valid order ID required", 400);
+                
+                $action = $body['action'];
+                
+                switch ($action) {
+                    case 'reserve':
+                        $result = $controller->reserveStock($orderId);
+                        break;
+                    case 'confirm':
+                        $result = $controller->confirmPayment($orderId);
+                        break;
+                    case 'cancel':
+                        $result = $controller->cancelOrder($orderId);
+                        break;
+                    case 'refund':
+                        $result = $controller->refundOrder($orderId);
+                        break;
+                    default:
+                        throw new Exception("Invalid action. Use: reserve, confirm, cancel, refund", 400);
+                }
+                
                 JsonMiddleware::sendResponse($result, $result['code']);
                 break;
             }
             
-            // After the order operations, before admin-only stock creation:
+            // WAREHOUSE TRANSFER
+            if (isset($body['transfer'])) {
+                AuthMiddleware::requireAdmin();
+                RateLimitMiddleware::check('stock_transfer', 10, 60);
+                
+                if (!isset($body['product_id']) || !isset($body['from_warehouse_id']) || 
+                    !isset($body['to_warehouse_id']) || !isset($body['quantity'])) {
+                    throw new Exception("product_id, from_warehouse_id, to_warehouse_id, and quantity required", 400);
+                }
+                
+                $productId = (int)$body['product_id'];
+                $fromWarehouseId = (int)$body['from_warehouse_id'];
+                $toWarehouseId = (int)$body['to_warehouse_id'];
+                $quantity = (int)$body['quantity'];
+                $reason = $body['reason'] ?? null;
+                
+                $result = $controller->transferStock($productId, $fromWarehouseId, $toWarehouseId, $quantity, $reason);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
             
-// Manual stock adjustment (admin only)
-if (isset($body['adjust'])) {
-    AuthMiddleware::requireAdmin();
-    RateLimitMiddleware::check('stock_adjust', 10, 60);
-    
-    if (!isset($body['product_id']) || !isset($body['warehouse_id']) || !isset($body['adjustment'])) {
-        throw new Exception("product_id, warehouse_id, and adjustment required", 400);
-    }
-    
-
-    $productId = (int)$body['product_id'];
-    $warehouseId = (int)$body['warehouse_id'];
-    $adjustment = (int)$body['adjustment'];
-    $reason = $body['reason'] ?? null;
-    
-    $result = $controller->adjustStock($productId, $warehouseId, $adjustment, $reason);
-    JsonMiddleware::sendResponse($result, $result['code']);
-    break;
-}
-            // Regular stock creation (admin only)
+            // STOCK ADJUSTMENT
+            if (isset($body['adjust'])) {
+                AuthMiddleware::requireAdmin();
+                RateLimitMiddleware::check('stock_adjust', 10, 60);
+                
+                if (!isset($body['product_id']) || !isset($body['warehouse_id']) || !isset($body['adjustment'])) {
+                    throw new Exception("product_id, warehouse_id, and adjustment required", 400);
+                }
+                
+                $productId = (int)$body['product_id'];
+                $warehouseId = (int)$body['warehouse_id'];
+                $adjustment = (int)$body['adjustment'];
+                $reason = $body['reason'] ?? null;
+                
+                $result = $controller->adjustStock($productId, $warehouseId, $adjustment, $reason);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
+            
+            // REGULAR STOCK CREATION (admin only)
             AuthMiddleware::requireAdmin();
             RateLimitMiddleware::check('stock_create', 5, 60);
             

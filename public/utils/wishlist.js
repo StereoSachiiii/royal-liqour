@@ -65,3 +65,9 @@ export const saveWishlist = (newList) => {
         console.error("Failed to save wishlist:", error);
     }
 };
+export const isInWishlist = (productId) => {
+    const wishlist = JSON.parse(localStorage.getItem(WISHLIST_KEY));
+    if (!wishlist || !wishlist.items) return false;
+    
+    return wishlist.items.some(item => Number(item.id) === Number(productId));
+};

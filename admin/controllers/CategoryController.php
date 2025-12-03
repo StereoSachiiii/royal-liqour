@@ -104,6 +104,23 @@ class CategoryController
             return $this->success('All categories retrieved', $data);
         });
     }
+    public function getProductsByCategoryIdEnriched(int $categoryId, int $limit = 50, int $offset = 0): array
+{
+    return $this->handle(function () use ($categoryId, $limit, $offset) {
+        $products = $this->repo->getProductsByCategoryIdEnriched($categoryId, $limit, $offset);
+        $total    = $this->repo->countProductsByCategoryId($categoryId);
+
+        return $this->success('Products retrieved', [
+            'items' => $products,
+            'pagination' => [
+                'total'   => $total,
+                'limit'   => $limit,
+                'offset'  => $offset,
+                'pages'   => (int)ceil($total / $limit)
+            ]
+        ]);
+    });
+}
 
     public function getById(int $id): array
     {
@@ -214,6 +231,32 @@ class CategoryController
             $deleted = $this->repo->hardDelete($id);
             if (!$deleted) throw new DatabaseException('Hard delete failed');
             return $this->success('Category permanently deleted');
+        });
+    }
+
+    public function getAllEnriched(int $limit = 50, int $offset = 0): array
+    {
+        return $this->handle(function () use ($limit, $offset) {
+            $data = $this->repo->getAllEnriched($limit, $offset);
+            return $this->success('Enriched categories retrieved', $data);
+        });
+    }
+
+    public function getByIdEnriched(int $id): array
+    {
+        return $this->handle(function () use ($id) {
+            $data = $this->repo->getByIdEnriched($id);
+            if (!$data) throw new NotFoundException('Category not found');
+            return $this->success('Enriched category retrieved', $data);
+        });
+    }
+
+    public function searchEnriched(string $query, int $limit = 50, int $offset = 0): array
+    {
+        return $this->handle(function () use ($query, $limit, $offset) {
+            if (empty(trim($query))) throw new ValidationException('Search query required');
+            $data = $this->repo->searchEnriched($query, $limit, $offset);
+            return $this->success('Enriched search results', $data);
         });
     }
 }

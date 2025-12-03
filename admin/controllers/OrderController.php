@@ -8,6 +8,8 @@ require_once __DIR__ . '/../exceptions/ValidationException.php';
 require_once __DIR__ . '/../exceptions/NotFoundException.php';
 require_once __DIR__ . '/../exceptions/DatabaseException.php';
 
+
+
 class OrderController
 {
     private OrderRepository $repo;
@@ -68,6 +70,41 @@ class OrderController
         }
     }
 
+
+    /**
+     * Handles the order cancellation process.
+     * Checks authorization and order eligibility before cancelling.
+     */
+    public function cancel(int $id): array
+    {
+        return $this->handle(function () use ($id) {
+            $order = $this->repo->getById($id);
+            if (!$order) {
+                throw new NotFoundException('Order not found', [], 404);
+            }
+
+            $currentUserId = $this->session->get('user_id');
+            $isAdmin = $this->session->get('is_admin');
+            
+            if (!$isAdmin && $order->user_id !== $currentUserId) {
+                throw new NotFoundException('Order not found or access denied', [], 404);
+            }
+
+            if (in_array($order->status, ['shipped', 'delivered', 'refunded', 'cancelled'])) {
+                 throw new ValidationException('Order cannot be cancelled in its current state: ' . $order->status, ['status' => $order->status], 400);
+            }
+            
+            $cancelledOrder = $this->repo->cancelOrder($id);
+
+            
+            if (!$cancelledOrder) {
+                throw new DatabaseException('Failed to update order status during cancellation');
+            }
+            
+            return $this->success('Order cancelled successfully', $cancelledOrder->toArray());
+        });
+    }
+
     public function create(array $data): array
     {
         return $this->handle(function () use ($data) {
@@ -92,6 +129,27 @@ class OrderController
             $order = $this->repo->getById($id);
             if (!$order) throw new NotFoundException('Order not found');
             return $this->success('Order retrieved', $order->toArray());
+        });
+    }
+
+    public function getDetailedOrderById(int $id): array
+    {
+        return $this->handle(function () use ($id) {
+            $orderModel = $this->repo->getById($id);
+            if (!$orderModel) throw new NotFoundException('Order not found');
+
+            $currentUserId = $this->session->getUserId();
+            $isAdmin = $this->session->get('is_admin');
+            
+            // if ($orderModel->user_id !== $currentUserId) {
+            //     throw new NotFoundException(message:'Order not found or access denied', code:404);
+            // }
+            
+            $detailedOrder = $this->repo->getDetailedOrderById($id);
+
+            if (!$detailedOrder) throw new NotFoundException('Order not found'); 
+
+            return $this->success('Detailed order retrieved', $detailedOrder);
         });
     }
 

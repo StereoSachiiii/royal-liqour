@@ -1,4 +1,4 @@
- .categories-container {
+.categories-container {
         display: grid;
         grid-template-columns: repeat(3,1fr);
         gap: 24px;
@@ -237,5 +237,3 @@
     text-decoration: none;
     color:aliceblue;
 }
-
-

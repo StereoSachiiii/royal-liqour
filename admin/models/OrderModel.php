@@ -7,7 +7,7 @@ class OrderModel
         private ?int $id = null,
         private ?string $order_number = null,
         private ?int $cart_id = null,
-        private ?int $user_id = null,
+        public ?int $user_id = null,
         private ?string $status = 'pending',
         private int $total_cents = 0,
         private ?int $shipping_address_id = null,

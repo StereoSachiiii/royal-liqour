@@ -22,7 +22,29 @@ $method = $_SERVER['REQUEST_METHOD'];
 try {
     switch ($method) {
         case 'GET':
-            if (!isset($_GET['id']) && !isset($_GET['search']) && !isset($_GET['count']) && !isset($_GET['includeInactive'])) {
+            if (isset($_GET['enriched']) && $_GET['enriched'] === 'true') {
+        $limit  = (int)($_GET['limit'] ?? 24);
+        $offset = (int)($_GET['offset'] ?? 0);
+
+        $search      = trim($_GET['search'] ?? '');
+        $categoryId  = !empty($_GET['category_id']) ? (int)$_GET['category_id'] : null;
+        $minPrice    = !empty($_GET['min_price']) ? (int)$_GET['min_price'] : null;
+        $maxPrice    = !empty($_GET['max_price']) ? (int)$_GET['max_price'] : null;
+        $sort        = $_GET['sort'] ?? 'newest'; // newest, price_asc, price_desc, name_asc, name_desc, popularity
+
+        $result = $controller->shopAllEnriched(
+            limit: $limit,
+            offset: $offset,
+            search: $search,
+            categoryId: $categoryId,
+            minPrice: $minPrice,
+            maxPrice: $maxPrice,
+            sort: $sort
+        );
+        JsonMiddleware::sendResponse($result, 200);
+        break;
+    }
+            if (!isset($_GET['id']) && !isset($_GET['search']) && !isset($_GET['count']) && !isset($_GET['includeInactive']) && !isset($_GET['enriched']) &&!isset($_GET['top'])) {
                 $limit = (int)($_GET['limit'] ?? 50);
                 $offset = (int)($_GET['offset'] ?? 0);
                 $result = $controller->getAll($limit, $offset);
@@ -38,7 +60,29 @@ try {
                 JsonMiddleware::sendResponse($result, 200);
                 break;
             }
+            if (isset($_GET['enriched']) && $_GET['enriched'] === 'true') {
+    $limit = (int)($_GET['limit'] ?? 50);
+    $offset = (int)($_GET['offset'] ?? 0);
+    $result = $controller->getAllEnriched($limit, $offset);
+    JsonMiddleware::sendResponse($result, 200);
+    break;
+}
 
+if (isset($_GET['top'])) {
+    $limit = (int)($_GET['top'] ?? 10);
+    $result = $controller->getTopSellers($limit);
+    JsonMiddleware::sendResponse($result, 200);
+    break;
+}
+
+if (isset($_GET['search']) && isset($_GET['enriched']) && $_GET['enriched'] === 'true') {
+    $query = (string)$_GET['search'];
+    $limit = (int)($_GET['limit'] ?? 50);
+    $offset = (int)($_GET['offset'] ?? 0);
+    $result = $controller->searchEnriched($query, $limit, $offset);
+    JsonMiddleware::sendResponse($result, 200);
+    break;
+}
             if (isset($_GET['id'])) {
                 $id = (int)$_GET['id'];
                 if ($id <= 0) throw new Exception("Product ID required", 400);

@@ -1,52 +1,513 @@
 Folder PATH listing
 Volume serial number is DA73-996F
 C:.
+¦   .env
+¦   .gitattributes
+¦   .gitignore
+¦   .htaccess
+¦   globals.css
+¦   ideas
+¦   index.php
+¦   project_structure.txt
+¦   README.md
+¦   schema.sql
+¦   test.php
+¦   testproducts.php
+¦   testsse.php
+¦   
 +---.vscode
+¦       c_cpp_properties.json
+¦       launch.json
+¦       settings.json
+¦       
 +---admin
-ï¿½   +---api
-ï¿½   +---controllers
-ï¿½   +---css
-ï¿½   +---events
-ï¿½   ï¿½   +---listeners
-ï¿½   +---exceptions
-ï¿½   +---js
-ï¿½   ï¿½   +---components
-ï¿½   ï¿½   +---pages
-ï¿½   +---manage
-ï¿½   ï¿½   +---user
-ï¿½   +---middleware
-ï¿½   +---models
-ï¿½   +---repositories
-ï¿½   +---services
-ï¿½   ï¿½   +---Auth
-ï¿½   ï¿½   +---Cart
-ï¿½   ï¿½   +---Category
-ï¿½   ï¿½   +---Order
-ï¿½   ï¿½   +---Product
-ï¿½   ï¿½   +---Stock
-ï¿½   ï¿½   +---User
-ï¿½   +---validators
+¦   ¦   index.php
+¦   ¦   info.php
+¦   ¦   manage.php
+¦   ¦   
+¦   +---api
+¦   ¦       addresses.php
+¦   ¦       admin-views.php
+¦   ¦       cart-items.php
+¦   ¦       cart.php
+¦   ¦       categories.php
+¦   ¦       cocktail-recipes.php
+¦   ¦       feedback.php
+¦   ¦       flavor-profile.php
+¦   ¦       order-items.php
+¦   ¦       orders.php
+¦   ¦       payments.php
+¦   ¦       product-recognition.php
+¦   ¦       products.php
+¦   ¦       recipe-ingredients.php
+¦   ¦       stock.php
+¦   ¦       suppliers.php
+¦   ¦       user-preferences.php
+¦   ¦       users.php
+¦   ¦       warehouses.php
+¦   ¦       
+¦   +---controllers
+¦   ¦       AddressController.php
+¦   ¦       AdminViewController.php
+¦   ¦       AuthController.php
+¦   ¦       CartController.php
+¦   ¦       CartItemController.php
+¦   ¦       CategoryController.php
+¦   ¦       CocktailRecipeController.php
+¦   ¦       DashboardController.php
+¦   ¦       FeedbackController.php
+¦   ¦       FlavorProfileController.php
+¦   ¦       OrderController.php
+¦   ¦       OrderItemController.php
+¦   ¦       PaymentController.php
+¦   ¦       ProductController.php
+¦   ¦       ProductRecognitionController.php
+¦   ¦       RecipeIngredientController.php
+¦   ¦       ReportController.php
+¦   ¦       SettingsController.php
+¦   ¦       StockController.php
+¦   ¦       SupplierController.php
+¦   ¦       UserController.php
+¦   ¦       UserPreferrenceController.php
+¦   ¦       WarehouseController.php
+¦   ¦       
+¦   +---css
+¦   ¦       cart-items.css
+¦   ¦       carts.css
+¦   ¦       category.css
+¦   ¦       cocktail-recipes.css
+¦   ¦       feedback.css
+¦   ¦       flavor-profiles.css
+¦   ¦       index.css
+¦   ¦       order-items.css
+¦   ¦       orders.css
+¦   ¦       overview.css
+¦   ¦       payments.css
+¦   ¦       product-recognition.css
+¦   ¦       product.css
+¦   ¦       recipe-ingredients.css
+¦   ¦       stocks.css
+¦   ¦       suppliers.css
+¦   ¦       user-addresses.css
+¦   ¦       user-preferences.css
+¦   ¦       user.css
+¦   ¦       warehouses.css
+¦   ¦       
+¦   +---events
+¦   ¦   ¦   EventDispatcher.php
+¦   ¦   ¦   
+¦   ¦   +---listeners
+¦   ¦           AuditLogListener.php
+¦   ¦           OrderCreatedListener.php
+¦   ¦           OrderStatusChangedListener.php
+¦   ¦           ProductCreatedListener.php
+¦   ¦           StockLowListener.php
+¦   ¦           UserLoggedInListener.php
+¦   ¦           UserRegisteredListener.php
+¦   ¦           
+¦   +---exceptions
+¦   ¦       AuthException.php
+¦   ¦       BaseException.php
+¦   ¦       DatabaseException.php
+¦   ¦       DuplicateEmailException.php
+¦   ¦       DuplicateException.php
+¦   ¦       InsufficientStockException.php
+¦   ¦       NotFoundException.php
+¦   ¦       UnauthorizedException.php
+¦   ¦       ValidationException.php
+¦   ¦       
+¦   +---js
+¦   ¦   ¦   api-helper.js
+¦   ¦   ¦   render.js
+¦   ¦   ¦   router.js
+¦   ¦   ¦   utils.js
+¦   ¦   ¦   
+¦   ¦   +---components
+¦   ¦   ¦       breadcrumb.js
+¦   ¦   ¦       
+¦   ¦   +---pages
+¦   ¦       ¦   config.js
+¦   ¦       ¦   
+¦   ¦       +---CartItems
+¦   ¦       ¦       CartItems.js
+¦   ¦       ¦       CartItems.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Carts
+¦   ¦       ¦       Carts.js
+¦   ¦       ¦       Carts.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Categories
+¦   ¦       ¦       Categories.js
+¦   ¦       ¦       Categories.utils.js
+¦   ¦       ¦       
+¦   ¦       +---CocktailRecipes
+¦   ¦       ¦       CocktailRecipes.js
+¦   ¦       ¦       CocktailRecipes.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Feedback
+¦   ¦       ¦       Feedback.js
+¦   ¦       ¦       Feedback.utils.js
+¦   ¦       ¦       
+¦   ¦       +---FlavourProfiles
+¦   ¦       ¦       FlavourProfiles.js
+¦   ¦       ¦       FlavourProfiles.utils.js
+¦   ¦       ¦       
+¦   ¦       +---OrderItems
+¦   ¦       ¦       OrderItems.js
+¦   ¦       ¦       OrderItems.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Orders
+¦   ¦       ¦       Orders.js
+¦   ¦       ¦       Orders.utils.js
+¦   ¦       ¦       
+¦   ¦       +---overview
+¦   ¦       ¦       Overview.js
+¦   ¦       ¦       Overview.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Payments
+¦   ¦       ¦       Payments.js
+¦   ¦       ¦       Payments.utils.js
+¦   ¦       ¦       
+¦   ¦       +---ProductRecognition
+¦   ¦       ¦       ProductRecognition.js
+¦   ¦       ¦       ProductRecognition.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Products
+¦   ¦       ¦       Products.js
+¦   ¦       ¦       Products.utils.js
+¦   ¦       ¦       
+¦   ¦       +---RecipeIngredients
+¦   ¦       ¦       RecipeIngredients.js
+¦   ¦       ¦       RecipeIngredients.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Stock
+¦   ¦       ¦       Stocks.js
+¦   ¦       ¦       Stocks.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Suppliers
+¦   ¦       ¦       Suppliers.js
+¦   ¦       ¦       Suppliers.utils.js
+¦   ¦       ¦       
+¦   ¦       +---UserAddresses
+¦   ¦       ¦       UserAddresses.js
+¦   ¦       ¦       UserAddresses.utils.js
+¦   ¦       ¦       
+¦   ¦       +---UserPreferences
+¦   ¦       ¦       UserPreferences.js
+¦   ¦       ¦       UserPreferences.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Users
+¦   ¦       ¦       Users.js
+¦   ¦       ¦       Users.utils.js
+¦   ¦       ¦       
+¦   ¦       +---Warehouses
+¦   ¦               Warehouses.js
+¦   ¦               Warehouses.utils.js
+¦   ¦               
+¦   +---manage
+¦   ¦   ¦   admin.css
+¦   ¦   ¦   fetch-helper.js
+¦   ¦   ¦   header.php
+¦   ¦   ¦   utils.js
+¦   ¦   ¦   
+¦   ¦   +---cart
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---cart_item
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---category
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---cocktail_recipe
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---feedback
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---flavor_profile
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---order
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---order_item
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---payments
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---product
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---product_recognition
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---recipe_ingredient
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---stock
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---supplier
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---user
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---user_addresses
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---user_preference
+¦   ¦   ¦       create.php
+¦   ¦   ¦       update.php
+¦   ¦   ¦       
+¦   ¦   +---warehouse
+¦   ¦           create.php
+¦   ¦           update.php
+¦   ¦           
+¦   +---middleware
+¦   ¦       AuthMiddleware.php
+¦   ¦       CorsMiddleware.php
+¦   ¦       CSRFMiddleware.php
+¦   ¦       JsonMiddleware.php
+¦   ¦       RateLimitMiddleware.php
+¦   ¦       
+¦   +---models
+¦   ¦       AddressModel.php
+¦   ¦       AuditLogModel.php
+¦   ¦       BaseModel.php
+¦   ¦       CartItemModel.php
+¦   ¦       CartModel.php
+¦   ¦       CategoryModel.php
+¦   ¦       CocktailRecipeModel.php
+¦   ¦       FeedbackModel.php
+¦   ¦       FlavorProfileModel.php
+¦   ¦       OrderItemModel.php
+¦   ¦       OrderModel.php
+¦   ¦       PaymentModel.php
+¦   ¦       ProductModel.php
+¦   ¦       ProductRecognition.php
+¦   ¦       RecipeIngredientsModel.php
+¦   ¦       StockModel.php
+¦   ¦       SupplierModel.php
+¦   ¦       UserModel.php
+¦   ¦       UserPreferrenceModel.php
+¦   ¦       WarehouseModel.php
+¦   ¦       
+¦   +---repositories
+¦   ¦       AddressRepository.php
+¦   ¦       AdminViewRepository.php
+¦   ¦       BaseRepository.php
+¦   ¦       CartItemRepository.php
+¦   ¦       CartRepository.php
+¦   ¦       CategoryRepository.php
+¦   ¦       CocktailRecipeRepository.php
+¦   ¦       FeedbackRepository.php
+¦   ¦       FlavorProfileRepository.php
+¦   ¦       OrderItemRepository.php
+¦   ¦       OrderRepository.php
+¦   ¦       PaymentRepository.php
+¦   ¦       ProductRecognitionRepository.php
+¦   ¦       ProductRepository.php
+¦   ¦       RecipeIngredientRepository.php
+¦   ¦       ReportRepository.php
+¦   ¦       StockRepository.php
+¦   ¦       SupplierRepository.php
+¦   ¦       UserPreferrencesRepository.php
+¦   ¦       UserRepository.php
+¦   ¦       WarehouseRepository.php
+¦   ¦       
+¦   +---services
+¦   ¦   ¦   AddressService.php
+¦   ¦   ¦   AuditService.php
+¦   ¦   ¦   EmailService.php
+¦   ¦   ¦   NotificationService.php
+¦   ¦   ¦   ReportService.php
+¦   ¦   ¦   SecurityService.php
+¦   ¦   ¦   SupplierService.php
+¦   ¦   ¦   ValidationService.php
+¦   ¦   ¦   WarehouseService.php
+¦   ¦   ¦   
+¦   ¦   +---Auth
+¦   ¦   ¦       AuthService.php
+¦   ¦   ¦       AuthStrategy.php
+¦   ¦   ¦       EmailAuthStrategy.php
+¦   ¦   ¦       TokenAuthStrategy.php
+¦   ¦   ¦       
+¦   ¦   +---Cart
+¦   ¦   ¦       index.php
+¦   ¦   ¦       
+¦   ¦   +---Category
+¦   ¦   ¦       imageService.php
+¦   ¦   ¦       
+¦   ¦   +---Order
+¦   ¦   ¦       OrderFactory.php
+¦   ¦   ¦       OrderService.php
+¦   ¦   ¦       
+¦   ¦   +---Product
+¦   ¦   ¦       ProductFactory.php
+¦   ¦   ¦       ProductService.php
+¦   ¦   ¦       
+¦   ¦   +---Stock
+¦   ¦   ¦       StockService.php
+¦   ¦   ¦       
+¦   ¦   +---User
+¦   ¦           UserFactory.php
+¦   ¦           UserService.php
+¦   ¦           
+¦   +---validators
+¦           AddressValidator.php
+¦           AuthValidator.php
+¦           CartItemValidator.php
+¦           CartValidator.php
+¦           CategoryValidator.php
+¦           CocktailRecipeValidator.php
+¦           FlavorProfileValidator.php
+¦           FlavorProfileValidator.php.php
+¦           OrderItemValidator.php
+¦           OrderValidator.php
+¦           PaymentValidator.php
+¦           ProductRecognitionValidator.php
+¦           ProductValidator.php
+¦           RecipeIngredientValidator.php
+¦           StockValidator.php
+¦           SupplierValidator.php
+¦           UserValidator.php
+¦           Validator.php
+¦           WarehouseValidator.php
+¦           
 +---config
+¦       constants.php
+¦       
 +---core
+¦       ApiRouter.php
+¦       Application.php
+¦       Cache.php
+¦       Container.php
+¦       CSRF.php
+¦       Database.php
+¦       Logger.php
+¦       Paginator.php
+¦       QueryBuilder.php
+¦       Request.php
+¦       Response.php
+¦       Router.php
+¦       Session.php
+¦       
 +---logs
+¦       access.log
+¦       api.log
+¦       audit.log
+¦       error.log
+¦       stock.log
+¦       
 +---public
-ï¿½   +---.vscode
-ï¿½   +---auth
-ï¿½   +---components
-ï¿½   +---css
-ï¿½   +---footer
-ï¿½   +---header
-ï¿½   +---myaccount
-ï¿½   ï¿½   +---notifications
-ï¿½   ï¿½   +---orders
-ï¿½   ï¿½   +---wishlist
-ï¿½   +---utils
+¦   ¦   account.php
+¦   ¦   cart.php
+¦   ¦   category.php
+¦   ¦   feedback.php
+¦   ¦   index.php
+¦   ¦   shop.php
+¦   ¦   welcome.php
+¦   ¦   wishlist.php
+¦   ¦   
+¦   +---.vscode
+¦   ¦       settings.json
+¦   ¦       
+¦   +---auth
+¦   ¦       auth-handler.php
+¦   ¦       auth.php
+¦   ¦       
+¦   +---components
+¦   ¦       breadcrumb.php
+¦   ¦       categories.php
+¦   ¦       products.php
+¦   ¦       quick-navigate.php
+¦   ¦       slider.php
+¦   ¦       
+¦   +---css
+¦   ¦       account.css
+¦   ¦       auth.css
+¦   ¦       cart.css
+¦   ¦       categories.css
+¦   ¦       details.css
+¦   ¦       footer.css
+¦   ¦       header.css
+¦   ¦       popup.css
+¦   ¦       products.css
+¦   ¦       wishlist.css
+¦   ¦       
+¦   +---footer
+¦   ¦       footer.php
+¦   ¦       
+¦   +---header
+¦   ¦       header.js
+¦   ¦       header.php
+¦   ¦       
+¦   +---myaccount
+¦   ¦   ¦   activity.php
+¦   ¦   ¦   profile.php
+¦   ¦   ¦   
+¦   ¦   +---manage
+¦   ¦   ¦       index.php
+¦   ¦   ¦       
+¦   ¦   +---notifications
+¦   ¦   ¦       index.php
+¦   ¦   ¦       
+¦   ¦   +---orders
+¦   ¦   ¦       index.php
+¦   ¦   ¦       
+¦   ¦   +---wishlist
+¦   ¦           index.php
+¦   ¦           
+¦   +---utils
+¦           addresses.js
+¦           api-helper.js
+¦           cart.js
+¦           config.js
+¦           order-items.js
+¦           orders.js
+¦           parse.js
+¦           products.js
+¦           stock.js
+¦           wishlist.js
+¦           
 +---storage
     +---cache
+    ¦       .gitkeep
+    ¦       
     +---cart
+    ¦       cart.js
+    ¦       
     +---defaults
+    ¦       default-product.jpg
+    ¦       
     +---uploads
         +---categories
+        ¦       .gitkeep
+        ¦       
         +---documents
+        ¦       .gitkeep
+        ¦       
         +---products
+        ¦       .gitkeep
+        ¦       
         +---users
+                .gitkeep
+                

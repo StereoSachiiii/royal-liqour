@@ -38,7 +38,7 @@ function renderStockRow(item) {
             <td class="stock_cell">${formatDate(item.updated_at)}</td>
             <td class="stock_cell stock_actions">
                 <button class="stock_btn-view " data-id="${item.id}" title="View Details">👁️ View</button>
-                <a href="manage/stock/edit.php?id=${item.id}" class="stock_btn-edit btn-edit" title="Edit Stock">✏️ Edit</a>
+                <a href="manage/stock/update.php?id=${item.id}" class="stock_btn-edit btn-edit" title="Edit Stock">✏️ Edit</a>
             </td>
         </tr>
     `;
@@ -80,6 +80,9 @@ export const Stock = async () => {
 
                     <div class="stock_header-actions" style="display:flex; gap:8px; align-items:center;">
                         <input id="stock-search-input" class="stock_search-input" type="search" placeholder="Search product or warehouse name" aria-label="Search stock" />
+                                <a href="manage/stock/create.php" class="stock_btn-primary btn-primary">
+           Create
+        </a>
                         <button id="stock_refresh-btn" class="stock_btn-refresh">
                             🔄 Refresh
                         </button>
@@ -219,7 +222,7 @@ const detailsHtml = (item) => {
     </div>
 
     <div class="stock_footer card-footer">
-        <a href="manage/stock/edit.php?id=${item.id}" class="stock_btn-primary btn-primary">
+        <a href="manage/stock/update.php?id=${item.id}" class="stock_btn-primary btn-primary">
             Edit Stock
         </a>
     </div>

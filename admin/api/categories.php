@@ -22,57 +22,75 @@ $method = $_SERVER['REQUEST_METHOD'];
 try {
     switch ($method) {
         case 'GET':
-            if (!isset($_GET['id']) && !isset($_GET['name']) && !isset($_GET['slug']) && !isset($_GET['search']) && !isset($_GET['count']) && !isset($_GET['includeInactive'])) {
-                $limit = (int)($_GET['limit'] ?? 50);
-                $offset = (int)($_GET['offset'] ?? 0);
-                $result = $controller->getAll($limit, $offset);
-                JsonMiddleware::sendResponse($result, 200);
-                break;
-            }
-
-            if (isset($_GET['includeInactive']) && $_GET['includeInactive'] === 'true') {
-                AuthMiddleware::requireAdmin();
-                $limit = (int)($_GET['limit'] ?? 50);
-                $offset = (int)($_GET['offset'] ?? 0);
-                $result = $controller->getAllIncludingInactive($limit, $offset);
-                JsonMiddleware::sendResponse($result, 200);
-                break;
-            }
-
+            // ────── 1. Single category by ID (with optional enriched) ──────
             if (isset($_GET['id'])) {
                 $id = (int)$_GET['id'];
-                if ($id <= 0) throw new Exception("Category ID required", 400);
-                $result = $controller->getById($id);
-                JsonMiddleware::sendResponse($result, $result['code']);
+                if ($id <= 0) throw new Exception("Invalid category ID", 400);
+
+                if (isset($_GET['enriched']) && $_GET['enriched'] === 'true') {
+                    $result = $controller->getByIdEnriched($id);
+                } else {
+                    $result = $controller->getById($id);
+                }
+                JsonMiddleware::sendResponse($result, $result['code'] ?? 200);
                 break;
             }
 
-            if (isset($_GET['name'])) {
-                $name = (string)$_GET['name'];
-                $result = $controller->getByName($name);
-                JsonMiddleware::sendResponse($result, $result['code']);
-                break;
-            }
+            // ────── 2. Products in a category (highest priority) ──────
+            if (isset($_GET['category_id'])) {
+                $categoryId = (int)$_GET['category_id'];
+                if ($categoryId <= 0) throw new Exception("Invalid category ID", 400);
 
-            // if (isset($_GET['slug'])) {
-            //     $slug = (string)$_GET['slug'];
-            //     $result = $controller->getBySlug($slug);
-            //     JsonMiddleware::sendResponse($result, $result['code']);
-            //     break;
-            // }
-
-            if (isset($_GET['search'])) {
-                $query = (string)$_GET['search'];
-                $limit = (int)($_GET['limit'] ?? 50);
+                $limit  = (int)($_GET['limit'] ?? 100);
                 $offset = (int)($_GET['offset'] ?? 0);
-                $result = $controller->search($query, $limit, $offset);
+
+                $result = $controller->getProductsByCategoryIdEnriched($categoryId, $limit, $offset);
                 JsonMiddleware::sendResponse($result, 200);
                 break;
             }
 
+            // ────── 3. List all categories (enriched or not) ──────
+            if (!isset($_GET['id']) && !isset($_GET['category_id']) && !isset($_GET['search']) && !isset($_GET['name']) && !isset($_GET['count'])) {
+                $limit  = (int)($_GET['limit'] ?? 50);
+                $offset = (int)($_GET['offset'] ?? 0);
+
+                if (isset($_GET['enriched']) && $_GET['enriched'] === 'true') {
+                    $result = $controller->getAllEnriched($limit, $offset);
+                } elseif (isset($_GET['includeInactive']) && $_GET['includeInactive'] === 'true') {
+                    AuthMiddleware::requireAdmin();
+                    $result = $controller->getAllIncludingInactive($limit, $offset);
+                } else {
+                    $result = $controller->getAll($limit, $offset);
+                }
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
+
+            // ────── 4. Search categories ──────
+            if (isset($_GET['search'])) {
+                $query  = trim($_GET['search']);
+                $limit  = (int)($_GET['limit'] ?? 50);
+                $offset = (int)($_GET['offset'] ?? 0);
+
+                if (isset($_GET['enriched']) && $_GET['enriched'] === 'true') {
+                    $result = $controller->searchEnriched($query, $limit, $offset);
+                } else {
+                    $result = $controller->search($query, $limit, $offset);
+                }
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
+
+            // ────── 5. By name ──────
+            if (isset($_GET['name'])) {
+                $result = $controller->getByName((string)$_GET['name']);
+                JsonMiddleware::sendResponse($result, $result['code'] ?? 200);
+                break;
+            }
+
+            // ────── 6. Count ──────
             if (isset($_GET['count']) && $_GET['count'] === 'true') {
-                $includeInactive = isset($_GET['includeInactive']) && $_GET['includeInactive'] === 'true';
-                if ($includeInactive) {
+                if (isset($_GET['includeInactive']) && $_GET['includeInactive'] === 'true') {
                     AuthMiddleware::requireAdmin();
                     $result = $controller->countAll();
                 } else {
@@ -84,11 +102,11 @@ try {
 
             throw new Exception("Invalid GET parameters", 400);
 
+        // ────── POST / PUT / DELETE (unchanged) ──────
         case 'POST':
             AuthMiddleware::requireAdmin();
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('category_create', 5, 60);
-
             $body = json_decode(file_get_contents('php://input'), true) ?? [];
             $result = $controller->create($body);
             JsonMiddleware::sendResponse($result, $result['code']);
@@ -98,11 +116,10 @@ try {
             AuthMiddleware::requireAdmin();
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('category_update', 5, 60);
-            $body = json_decode(file_get_contents('php://input'), associative: true) ?? [];
-            if (!isset($_GET['id'])&& !isset($body)) throw new Exception("Category ID required", 400);
-
+            $body = json_decode(file_get_contents('php://input'), true) ?? [];
+            if (!isset($_GET['id']) && !isset($body['id'])) throw new Exception("Category ID required", 400);
             $id = $_GET['id'] ?? $body['id'];
-            $result = $controller->update(intval($id), $body);
+            $result = $controller->update((int)$id, $body);
             JsonMiddleware::sendResponse($result, $result['code']);
             break;
 
@@ -110,24 +127,16 @@ try {
             AuthMiddleware::requireAdmin();
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('category_delete', 5, 60);
-
             if (!isset($_GET['id'])) throw new Exception("Category ID required", 400);
-
             $id = (int)$_GET['id'];
             $hard = isset($_GET['hard']) && $_GET['hard'] === 'true';
-
-            if ($hard) {
-                $result = $controller->hardDelete($id);
-            } else {
-                $result = $controller->delete($id);
-            }
+            $result = $hard ? $controller->hardDelete($id) : $controller->delete($id);
             JsonMiddleware::sendResponse($result, $result['code']);
             break;
 
         default:
             throw new Exception("Method not allowed", 405);
     }
-
 } catch (Exception $e) {
     $code = $e->getCode() ?: 500;
     JsonMiddleware::sendResponse([

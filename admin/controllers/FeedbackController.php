@@ -28,6 +28,12 @@ class FeedbackController {
     private function handleRequest(callable $callback): array {
         try { return $callback(); } catch(Exception $ex) { return $this->errorResponse($ex); }
     }
+    public function getAllWithProductDetails(): array {
+    return $this->handleRequest(function() {
+        $feedbacks = $this->repository->getAllWithProductDetails();
+        return $this->successResponse("All feedback with product details retrieved successfully.", $feedbacks);
+    });
+}
     public function hardDelete(int $id): array {
         return $this->handleRequest(function() use ($id) {
             $result = $this->repository->hardDelete($id);

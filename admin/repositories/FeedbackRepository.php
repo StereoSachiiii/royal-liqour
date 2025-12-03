@@ -42,6 +42,76 @@ class FeedbackRepository {
         return $row ? $this->mapToModel($row) : null;
     }
 
+    public function getAllWithProductDetails(): array {
+    $stmt = $this->pdo->query("
+        SELECT 
+            f.id,
+            f.user_id,
+            f.product_id,
+            f.rating,
+            f.comment,
+            f.is_verified_purchase,
+            f.is_active,
+            f.created_at,
+            f.updated_at,
+            f.deleted_at,
+            p.name as product_name,
+            p.slug as product_slug,
+            p.description as product_description,
+            p.price_cents,
+            p.image_url as product_image,
+            c.name as category_name,
+            u.name as user_name,
+            u.email as user_email,
+            (SELECT COUNT(*) FROM order_items oi 
+             JOIN orders o ON oi.order_id = o.id 
+             WHERE oi.product_id = f.product_id 
+             AND o.status IN ('paid', 'delivered')) as units_sold,
+            (SELECT COUNT(*) FROM feedback f2 
+             WHERE f2.product_id = f.product_id 
+             AND f2.deleted_at IS NULL 
+             AND f2.is_active = TRUE) as total_reviews,
+            (SELECT AVG(rating) FROM feedback f3 
+             WHERE f3.product_id = f.product_id 
+             AND f3.deleted_at IS NULL 
+             AND f3.is_active = TRUE) as avg_rating
+        FROM feedback f
+        JOIN products p ON f.product_id = p.id
+        JOIN categories c ON p.category_id = c.id
+        JOIN users u ON f.user_id = u.id
+        WHERE f.deleted_at IS NULL 
+        AND p.deleted_at IS NULL
+        ORDER BY f.created_at DESC
+    ");
+    
+    $feedbacks = [];
+    while ($row = $stmt->fetch()) {
+        $feedbacks[] = [
+            'id' => (int)$row['id'],
+            'userId' => (int)$row['user_id'],
+            'productId' => (int)$row['product_id'],
+            'rating' => (int)$row['rating'],
+            'comment' => $row['comment'],
+            'isVerifiedPurchase' => (bool)$row['is_verified_purchase'],
+            'isActive' => (bool)$row['is_active'],
+            'createdAt' => $row['created_at'],
+            'updatedAt' => $row['updated_at'],
+            'deletedAt' => $row['deleted_at'],
+            'productName' => $row['product_name'],
+            'productSlug' => $row['product_slug'],
+            'productDescription' => $row['product_description'],
+            'priceCents' => (int)$row['price_cents'],
+            'productImage' => $row['product_image'],
+            'categoryName' => $row['category_name'],
+            'userName' => $row['user_name'],
+            'userEmail' => $row['user_email'],
+            'unitsSold' => (int)$row['units_sold'],
+            'totalReviews' => (int)$row['total_reviews'],
+            'avgRating' => round((float)$row['avg_rating'], 1)
+        ];
+    }
+    return $feedbacks;
+}
     public function getByUserId(int $userId): array {
         $stmt = $this->pdo->prepare("
             SELECT * FROM feedback WHERE user_id = :user_id AND deleted_at IS NULL ORDER BY created_at DESC

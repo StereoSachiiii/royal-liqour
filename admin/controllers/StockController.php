@@ -18,127 +18,178 @@ class StockController
         $this->repo = new StockRepository();
         $this->session = Session::getInstance();
     }
+
+    // ORDER-RELATED OPERATIONS
     public function reserveStock(int $orderId): array
-{
-    return $this->handle(function () use ($orderId) {
-        $this->repo->reserveStock($orderId);
-        return $this->success('Stock reserved for order');
-    });
-}
-
-
-public function getAvailableStock(int $productId): array
-{
-    return $this->handle(function () use ($productId) {
-        $available = $this->repo->getAvailableStockByProduct($productId);
-        
-        return $this->success('Available stock retrieved', [
-            'product_id' => $productId,
-            'available' => $available,
-            'in_stock' => $available > 0
-        ]);
-    });
-}
-public function confirmPayment(int $orderId): array
-{
-    return $this->handle(function () use ($orderId) {
-        $this->repo->confirmPayment($orderId);
-        return $this->success('Payment confirmed, stock deducted');
-    });
-}
-public function adjustStock(int $productId, int $warehouseId, int $adjustment, ?string $reason = null): array
-{
-    return $this->handle(function () use ($productId, $warehouseId, $adjustment, $reason) {
-        $stock = $this->repo->getByProductAndWarehouse($productId, $warehouseId);
-        if (!$stock) throw new NotFoundException('Stock not found');
-        
-        $newQuantity = $stock->getQuantity() + $adjustment;
-        if ($newQuantity < $stock->getReserved()) {
-            throw new ValidationException('Cannot reduce quantity below reserved amount');
-        }
-        
-        $updated = $this->repo->update($stock->getId(), ['quantity' => $newQuantity]);
-        
-        // Optional: log the adjustment
-        error_log("Stock adjusted: Product $productId, Warehouse $warehouseId, Change: $adjustment, Reason: $reason");
-        
-        return $this->success('Stock adjusted', $updated->toArray());
-    });
-}
-public function cancelOrder(int $orderId): array
-{
-    return $this->handle(function () use ($orderId) {
-        $this->repo->cancelOrder($orderId);
-        return $this->success('Order cancelled, stock returned');
-    });
-}
-
-public function refundOrder(int $orderId): array
-{
-    return $this->handle(function () use ($orderId) {
-        $this->repo->refundOrder($orderId);
-        return $this->success('Order refunded, stock returned');
-    });
-}
-    private function success(string $message, $data = [], int $code = 200): array
     {
-        return [
-            'success' => true,
-            'message' => $message,
-            'data'    => $data,
-            'code'    => $code,
-            'context' => []
-        ];
+        return $this->handle(function () use ($orderId) {
+            $this->repo->reserveStock($orderId);
+            $this->logStockOperation('reserve', "Reserved stock for order {$orderId}");
+            return $this->success('Stock reserved for order');
+        });
     }
 
-    private function logError(Throwable $e, array $context = []): void
+    public function confirmPayment(int $orderId): array
     {
-        error_log(sprintf(
-            "[%s] StockController Error: %s | File: %s:%d | Context: %s",
-            date('Y-m-d H:i:s'),
-            $e->getMessage(),
-            $e->getFile(),
-            $e->getLine(),
-            json_encode($context)
-        ));
+        return $this->handle(function () use ($orderId) {
+            $this->repo->confirmPayment($orderId);
+            $this->logStockOperation('confirm_payment', "Payment confirmed for order {$orderId}, stock deducted");
+            return $this->success('Payment confirmed, stock deducted');
+        });
     }
 
-    private function error(Throwable $e): array
+    public function cancelOrder(int $orderId): array
     {
-        $code = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
-        $context = method_exists($e, 'getContext') ? $e->getContext() : [];
-
-        $this->logError($e, $context);
-
-        return [
-            'success' => false,
-            'message' => $e->getMessage(),
-            'code'    => $code,
-            'context' => $context
-        ];
+        return $this->handle(function () use ($orderId) {
+            $this->repo->cancelOrder($orderId);
+            $this->logStockOperation('cancel_order', "Order {$orderId} cancelled, reserved stock returned");
+            return $this->success('Order cancelled, stock returned');
+        });
     }
 
-    private function handle(callable $callback): array
+    public function refundOrder(int $orderId): array
     {
-        try {
-            return $callback();
-        } catch (ValidationException | NotFoundException | DatabaseException $e) {
-            return $this->error($e);
-        } catch (Throwable $e) {
-            return $this->error(new Exception('Unexpected error: ' . $e->getMessage(), 500));
-        }
+        return $this->handle(function () use ($orderId) {
+            $this->repo->refundOrder($orderId);
+            $this->logStockOperation('refund_order', "Order {$orderId} refunded, stock returned");
+            return $this->success('Order refunded, stock returned');
+        });
     }
 
+    // WAREHOUSE OPERATIONS
+    public function adjustStock(int $productId, int $warehouseId, int $adjustment, ?string $reason = null): array
+    {
+        return $this->handle(function () use ($productId, $warehouseId, $adjustment, $reason) {
+            $stock = $this->repo->getByProductAndWarehouse($productId, $warehouseId);
+            if (!$stock) throw new NotFoundException('Stock not found');
+            
+            $newQuantity = $stock->getQuantity() + $adjustment;
+            if ($newQuantity < $stock->getReserved()) {
+                throw new ValidationException('Cannot reduce quantity below reserved amount');
+            }
+            
+            $updated = $this->repo->update($stock->getId(), ['quantity' => $newQuantity]);
+            
+            $this->logStockOperation(
+                'adjust',
+                "Stock adjusted: Product {$productId}, Warehouse {$warehouseId}, Change: {$adjustment}, New Qty: {$newQuantity}, Reason: {$reason}"
+            );
+            
+            return $this->success('Stock adjusted', $updated->toArray());
+        });
+    }
+
+    public function transferStock(int $productId, int $fromWarehouseId, int $toWarehouseId, int $quantity, ?string $reason = null): array
+    {
+        return $this->handle(function () use ($productId, $fromWarehouseId, $toWarehouseId, $quantity, $reason) {
+            if ($fromWarehouseId === $toWarehouseId) {
+                throw new ValidationException('Cannot transfer to the same warehouse');
+            }
+
+            $fromStock = $this->repo->getByProductAndWarehouse($productId, $fromWarehouseId);
+            if (!$fromStock) throw new NotFoundException('Source stock not found');
+
+            $available = $fromStock->getQuantity() - $fromStock->getReserved();
+            if ($quantity > $available) {
+                throw new ValidationException("Insufficient available stock. Available: {$available}, Requested: {$quantity}");
+            }
+
+            // Reduce from source
+            $this->repo->update($fromStock->getId(), [
+                'quantity' => $fromStock->getQuantity() - $quantity
+            ]);
+
+            // Add to destination (create if doesn't exist)
+            $toStock = $this->repo->getByProductAndWarehouse($productId, $toWarehouseId);
+            if ($toStock) {
+                $this->repo->update($toStock->getId(), [
+                    'quantity' => $toStock->getQuantity() + $quantity
+                ]);
+            } else {
+                $this->repo->create([
+                    'product_id' => $productId,
+                    'warehouse_id' => $toWarehouseId,
+                    'quantity' => $quantity,
+                    'reserved' => 0
+                ]);
+            }
+
+            $this->logStockOperation(
+                'transfer',
+                "Transferred {$quantity} units of product {$productId} from warehouse {$fromWarehouseId} to {$toWarehouseId}. Reason: {$reason}"
+            );
+
+            return $this->success('Stock transferred successfully', [
+                'product_id' => $productId,
+                'from_warehouse_id' => $fromWarehouseId,
+                'to_warehouse_id' => $toWarehouseId,
+                'quantity' => $quantity
+            ]);
+        });
+    }
+
+    // FRONTEND HELPERS
+    public function getAvailableStock(int $productId): array
+    {
+        return $this->handle(function () use ($productId) {
+            $available = $this->repo->getAvailableStockByProduct($productId);
+            
+            return $this->success('Available stock retrieved', [
+                'product_id' => $productId,
+                'available' => $available,
+                'in_stock' => $available > 0
+            ]);
+        });
+    }
+
+    public function getStockSummary(int $productId): array
+    {
+        return $this->handle(function () use ($productId) {
+            $stocks = $this->repo->getByProduct($productId);
+            
+            $total = 0;
+            $reserved = 0;
+            $byWarehouse = [];
+            
+            foreach ($stocks as $stock) {
+                $total += $stock->getQuantity();
+                $reserved += $stock->getReserved();
+                $byWarehouse[] = [
+                    'warehouse_id' => $stock->getWarehouseId(),
+                    'quantity' => $stock->getQuantity(),
+                    'reserved' => $stock->getReserved(),
+                    'available' => $stock->getQuantity() - $stock->getReserved()
+                ];
+            }
+            
+            return $this->success('Stock summary retrieved', [
+                'product_id' => $productId,
+                'total_quantity' => $total,
+                'total_reserved' => $reserved,
+                'total_available' => $total - $reserved,
+                'warehouses' => $byWarehouse,
+                'low_stock_warning' => ($total - $reserved) < 50
+            ]);
+        });
+    }
+
+    // CRUD OPERATIONS
     public function create(array $data): array
     {
         return $this->handle(function () use ($data) {
             StockValidator::validateCreate($data);
 
             if ($this->repo->getByProductAndWarehouse($data['product_id'], $data['warehouse_id'])) {
-                throw new DuplicateException('Stock entry already exists for this product and warehouse');
+                throw new ValidationException('Stock entry already exists for this product and warehouse');
             }
 
             $stock = $this->repo->create($data);
+            
+            $this->logStockOperation(
+                'create',
+                "Created stock entry: Product {$data['product_id']}, Warehouse {$data['warehouse_id']}, Quantity {$data['quantity']}"
+            );
+            
             return $this->success('Stock created', $stock->toArray(), 201);
         });
     }
@@ -203,6 +254,12 @@ public function refundOrder(int $orderId): array
 
             $updated = $this->repo->update($id, $data);
             if (!$updated) throw new NotFoundException('Stock not found');
+            
+            $this->logStockOperation(
+                'update',
+                "Updated stock ID {$id}: " . json_encode($data)
+            );
+            
             return $this->success('Stock updated', $updated->toArray());
         });
     }
@@ -214,6 +271,12 @@ public function refundOrder(int $orderId): array
 
             $updated = $this->repo->updateByProductWarehouse($productId, $warehouseId, $data);
             if (!$updated) throw new NotFoundException('Stock not found');
+            
+            $this->logStockOperation(
+                'update',
+                "Updated stock Product {$productId} Warehouse {$warehouseId}: " . json_encode($data)
+            );
+            
             return $this->success('Stock updated', $updated->toArray());
         });
     }
@@ -221,8 +284,21 @@ public function refundOrder(int $orderId): array
     public function delete(int $id): array
     {
         return $this->handle(function () use ($id) {
+            $stock = $this->repo->getById($id);
+            if (!$stock) throw new NotFoundException('Stock not found');
+            
+            if ($stock->getReserved() > 0) {
+                throw new ValidationException('Cannot delete stock with active reservations');
+            }
+
             $deleted = $this->repo->delete($id);
             if (!$deleted) throw new NotFoundException('Stock not found');
+            
+            $this->logStockOperation(
+                'delete',
+                "Deleted stock ID {$id} (Product {$stock->getProductId()}, Warehouse {$stock->getWarehouseId()})"
+            );
+            
             return $this->success('Stock deleted');
         });
     }
@@ -230,9 +306,83 @@ public function refundOrder(int $orderId): array
     public function deleteByProductWarehouse(int $productId, int $warehouseId): array
     {
         return $this->handle(function () use ($productId, $warehouseId) {
+            $stock = $this->repo->getByProductAndWarehouse($productId, $warehouseId);
+            if (!$stock) throw new NotFoundException('Stock not found');
+            
+            if ($stock->getReserved() > 0) {
+                throw new ValidationException('Cannot delete stock with active reservations');
+            }
+
             $deleted = $this->repo->deleteByProductWarehouse($productId, $warehouseId);
             if (!$deleted) throw new NotFoundException('Stock not found');
+            
+            $this->logStockOperation(
+                'delete',
+                "Deleted stock Product {$productId} Warehouse {$warehouseId}"
+            );
+            
             return $this->success('Stock deleted');
         });
+    }
+
+    // HELPERS
+    private function success(string $message, $data = [], int $code = 200): array
+    {
+        return [
+            'success' => true,
+            'message' => $message,
+            'data'    => $data,
+            'code'    => $code,
+            'context' => []
+        ];
+    }
+
+    private function logError(Throwable $e, array $context = []): void
+    {
+        error_log(sprintf(
+            "[%s] StockController Error: %s | File: %s:%d | Context: %s",
+            date('Y-m-d H:i:s'),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            json_encode($context)
+        ));
+    }
+
+    private function logStockOperation(string $operation, string $details): void
+    {
+        error_log(sprintf(
+            "[%s] STOCK_OPERATION: %s | %s | User: %s",
+            date('Y-m-d H:i:s'),
+            strtoupper($operation),
+            $details,
+            $this->session->getUserId() ?? 'system'
+        ));
+    }
+
+    private function error(Throwable $e): array
+    {
+        $code = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+        $context = method_exists($e, 'getContext') ? $e->getContext() : [];
+
+        $this->logError($e, $context);
+
+        return [
+            'success' => false,
+            'message' => $e->getMessage(),
+            'code'    => $code,
+            'context' => $context
+        ];
+    }
+
+    private function handle(callable $callback): array
+    {
+        try {
+            return $callback();
+        } catch (ValidationException | NotFoundException | DatabaseException $e) {
+            return $this->error($e);
+        } catch (Throwable $e) {
+            return $this->error(new Exception('Unexpected error: ' . $e->getMessage(), 500));
+        }
     }
 }

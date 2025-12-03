@@ -201,4 +201,43 @@ class ProductController
             return $this->success('Product permanently deleted');
         });
     }
+
+    public function getAllEnriched(int $limit = 50, int $offset = 0): array
+{
+    return $this->handle(function () use ($limit, $offset) {
+        $data = $this->repo->getAllEnriched($limit, $offset);
+        return $this->success('Enriched products retrieved', $data);
+    });
+}
+
+public function getTopSellers(int $limit = 10): array
+{
+    return $this->handle(function () use ($limit) {
+        $data = $this->repo->getTopSellers($limit);
+        return $this->success('Top sellers retrieved', $data);
+    });
+}
+public function shopAllEnriched(
+    int $limit = 24,
+    int $offset = 0,
+    string $search = '',
+    ?int $categoryId = null,
+    ?int $minPrice = null,
+    ?int $maxPrice = null,
+    string $sort = 'newest'
+): array {
+    return $this->handle(function () use ($limit, $offset, $search, $categoryId, $minPrice, $maxPrice, $sort) {
+        $data = $this->repo->shopAllEnriched(
+            $limit, $offset, $search, $categoryId, $minPrice, $maxPrice, $sort
+        );
+        return $this->success('Shop products retrieved', $data);
+    });
+}
+public function searchEnriched(string $query, int $limit = 50, int $offset = 0): array
+{
+    return $this->handle(function () use ($query, $limit, $offset) {
+        $data = $this->repo->searchEnriched($query, $limit, $offset);
+        return $this->success('Enriched search results', $data);
+    });
+}
 }

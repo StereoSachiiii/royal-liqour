@@ -18,10 +18,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $controller = new OrderController();
 $method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? null;
 
 try {
     switch ($method) {
         case 'GET':
+            if (isset($_GET['id']) && (isset($_GET['enriched']) && $_GET['enriched'] === 'true')) {
+                $id = (int)$_GET['id'];
+                if ($id <= 0) throw new Exception("Order ID required", 400);
+
+                $result = $controller->getDetailedOrderById($id);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break; 
+            }
+            
+            
+            if (!isset($_GET['id']) && !isset($_GET['order_number']) && !isset($_GET['user_id']) && !isset($_GET['count'])) {
+                AuthMiddleware::requireAdmin();
+                $limit = (int)($_GET['limit'] ?? 50);
+                $offset = (int)($_GET['offset'] ?? 0);
+                $result = $controller->getAll($limit, $offset);
+                JsonMiddleware::sendResponse($result, 200);
+                break;
+            }
+
+            if (isset($_GET['id'])) {
+                $id = (int)$_GET['id'];
+                if ($id <= 0) throw new Exception("Order ID required", 400);
+                $result = $controller->getById($id);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
             if (!isset($_GET['id']) && !isset($_GET['order_number']) && !isset($_GET['user_id']) && !isset($_GET['count'])) {
                 AuthMiddleware::requireAdmin();
                 $limit = (int)($_GET['limit'] ?? 50);
@@ -67,6 +94,21 @@ try {
         case 'POST':
             CsrfMiddleware::verifyCsrf();
             RateLimitMiddleware::check('order_create', 5, 60);
+            CsrfMiddleware::verifyCsrf();
+            RateLimitMiddleware::check('order_create', 5, 60);
+
+            
+            if ($action === 'cancel') {
+                if (!isset($_GET['id'])) throw new Exception("Order ID required for cancellation", 400);
+                $id = (int)$_GET['id'];
+                
+                // Auth check is inside the controller, but require login first
+                AuthMiddleware::requireAuth(); 
+                
+                $result = $controller->cancel($id);
+                JsonMiddleware::sendResponse($result, $result['code']);
+                break;
+            }
 
             $body = json_decode(file_get_contents('php://input'), true) ?? [];
             $result = $controller->create($body);

@@ -100,19 +100,12 @@ require_once __DIR__ . '/../header/header.php';
                 <ul class="activity-list">
                     <li><a href="<?= BASE_URL?>myaccount/orders">View Order History</a></li>
                     <li><a href="<?= BASE_URL?>myaccount/wishlist">Manage Wishlist</a> </li>
-                    <li><a href="<?= BASE_URL?>myaccount/reorder.php">Quick Re-order</a> </li>
+                    
                 </ul>
                 <a href="/path/to/orders.php" class="dashboard-link">Track Latest Order</a>
             </div>
 
-            <div class="dashboard-card settings-preferences">
-                <h2 class="card-heading">Settings & Preferences</h2>
-                <ul class="settings-list">
-                    <li><a href="<?= BASE_URL?>myaccount/notifications">Notification Preferences</a></li>
-                    <li><a href="<?= BASE_URL?>myaccount/settings">Change Password & Security</a></li>
-                    <li><a href="<?= BASE_URL?>myaccount/privacy">Data & Privacy Settings</a></li>
-                </ul>
-            </div>
+
             
             <div class="dashboard-card recommendations">
                 <h2 class="card-heading">Exclusive Recommendations</h2>

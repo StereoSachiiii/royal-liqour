@@ -40,6 +40,11 @@ try {
                 JsonMiddleware::sendResponse($result, 200);
                 break;
             }
+            if(isset($_GET['details']) && boolval($_GET['details'])===true){
+                $result = $controller->getAllWithProductDetails();
+                JsonMiddleware::sendResponse($result,200);
+
+            }
             RateLimitMiddleware::check('feedback_getAll', 5, 60);
             $result = $controller->getAll();
             JsonMiddleware::sendResponse($result, 200);
