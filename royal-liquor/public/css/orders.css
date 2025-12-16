@@ -1,0 +1,54 @@
+/* Orders Page Styles - Placeholder */
+/* This file will be populated when the orders page is refactored */
+
+.orders-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.orders-title {
+    font-size: 2.5rem;
+    margin-bottom: 30px;
+    color: #1a1a1a;
+}
+
+.order-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.order-id {
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.order-status {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.order-status.delivered {
+    background: #d4edda;
+    color: #155724;
+}
+
+.order-status.processing {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.order-status.shipped {
+    background: #d1ecf1;
+    color: #0c5460;
+}

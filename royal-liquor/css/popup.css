@@ -1,0 +1,93 @@
+/**
+ * Cookie Modal Styles
+ * 
+ * NOTE: All styles are scoped to .cookie-modal to prevent conflicts
+ * Uses globals.css design tokens
+ */
+
+.cookie-modal-bg {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.29);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: var(--z-modal-backdrop);
+}
+
+.cookie-modal-bg-active {
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+}
+
+.cookie-modal {
+    display: none;
+    z-index: 0;
+}
+
+.cookie-modal-active {
+    top: 100%;
+    left: 0%;
+    width: 100vw;
+    height: auto;
+    min-height: 200px;
+    background-color: var(--color-white);
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-lg);
+    z-index: var(--z-modal);
+}
+
+.cookie-modal-active p {
+    flex: 1;
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    color: var(--color-gray-800);
+    line-height: 1.6;
+}
+
+/* Cookie modal specific buttons - scoped to avoid global conflicts */
+.cookie-modal-active .actions {
+    display: flex;
+    gap: var(--space-md);
+    flex-direction: column;
+    padding: var(--space-md);
+}
+
+.cookie-modal-active .actions button {
+    background: var(--color-black);
+    color: var(--color-white);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0;
+    border: 1px solid var(--color-black);
+    cursor: pointer;
+    font-family: var(--font-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all var(--transition-normal);
+}
+
+.cookie-modal-active .actions button:hover {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-black);
+}
+
+.cookie-modal-active .actions .cookie-reject {
+    background: var(--color-white);
+    color: var(--color-black);
+    border-color: var(--color-gray-300);
+}
+
+.cookie-modal-active .actions .cookie-reject:hover {
+    background: var(--color-gray-100);
+    border-color: var(--color-gray-400);
+    color: var(--color-black);
+}

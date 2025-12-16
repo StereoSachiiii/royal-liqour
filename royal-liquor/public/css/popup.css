@@ -1,0 +1,70 @@
+.cookie-modal-bg{
+
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.29);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2000;
+   
+
+
+}
+
+.cookie-modal-bg-active{
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+}
+
+.cookie-modal{
+    display: none;
+    z-index: 0;
+}
+.cookie-modal-active{
+    top: 100%;
+    left: 0%;
+    width: 100vw;
+    height: 200px;
+    background-color: aliceblue;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    padding: 32px;
+    display: flex;
+    justify-content: space-between;
+    
+    z-index: 4000;
+
+}
+ button {
+  background: black;
+  color: white;
+  font-size: 1.25rem;
+  padding: 1ch 1.5ch;
+  text-box: cap alphabetic;
+  border-radius: 2rem;
+  border: none;
+  
+  position: relative;
+  
+  &::before {
+    --vibrance: 50%;
+    content: " ";
+    position: absolute;
+    inset: 10px 10px -10px;
+    background: linear-gradient(to right in oklch longer hue, oklch(95% var(--vibrance) 0) 0 100%);
+    filter: blur(20px);
+    border-radius: inherit;
+    z-index: -1;
+  }
+}
+
+.actions{
+    display: flex;
+    gap: 16px;
+    flex-direction: column;
+    padding: 16px;
+    }
+
+

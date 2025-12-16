@@ -1,0 +1,138 @@
+<?php
+declare(strict_types=1);
+
+use Core\Request;
+
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../middleware/CSRFMiddleware.php';
+require_once __DIR__ . '/../middleware/RateLimitMiddleware.php';
+require_once __DIR__ . '/../core/Router.php';
+
+/** @var Router|null $router */
+
+// Guard against direct access - must be loaded via router
+if (!isset($router) || !$router instanceof Router) {
+    header('Content-Type: application/json');
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Direct access not allowed. Use /api/v1/suppliers routes.']);
+    exit;
+}
+
+$router->group('/api/v1', function (Router $router): void {
+    // List suppliers (with optional search / includeInactive)
+    $router->get('/suppliers', function (Request $request): array {
+        $controller = $GLOBALS['container']->get(SupplierController::class);
+        $limit           = (int)$request->getQuery('limit', 50);
+        $offset          = (int)$request->getQuery('offset', 0);
+        $includeInactive = $request->getQuery('includeInactive') === 'true';
+        $search          = trim((string)$request->getQuery('search', ''));
+
+        // Search if query provided
+        if ($search !== '') {
+            return $controller->search($search, $limit, $offset);
+        }
+
+        if ($includeInactive) {
+            AuthMiddleware::requireAdmin();
+            return $controller->getAllIncludingInactive($limit, $offset);
+        }
+
+        return $controller->getAll($limit, $offset);
+    });
+
+    // Get supplier by ID
+    $router->get('/suppliers/:id', function (Request $request, array $params): array {
+        $controller = $GLOBALS['container']->get(SupplierController::class);
+        $id         = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Supplier ID required',
+                'code'    => 400,
+            ];
+        }
+        return $controller->getById($id);
+    });
+
+    // Get supplier by name
+    $router->get('/suppliers/by-name', function (Request $request): array {
+        $controller = $GLOBALS['container']->get(SupplierController::class);
+        $name       = (string)$request->getQuery('name', '');
+        return $controller->getByName($name);
+    });
+
+    // Search suppliers
+    $router->get('/suppliers/search', function (Request $request): array {
+        $controller = $GLOBALS['container']->get(SupplierController::class);
+        $query      = (string)$request->getQuery('search', '');
+        $limit      = (int)$request->getQuery('limit', 50);
+        $offset     = (int)$request->getQuery('offset', 0);
+        return $controller->search($query, $limit, $offset);
+    });
+
+    // Count suppliers
+    $router->get('/suppliers/count', function (Request $request): array {
+        $controller = $GLOBALS['container']->get(SupplierController::class);
+        $includeInactive = $request->getQuery('includeInactive') === 'true';
+
+        if ($includeInactive) {
+            AuthMiddleware::requireAdmin();
+            return $controller->countAll();
+        }
+
+        return $controller->count();
+    });
+
+    // Create supplier
+    $router->post('/suppliers', function (Request $request): array {
+        AuthMiddleware::requireAdmin();
+        CsrfMiddleware::verifyCsrf();
+        RateLimitMiddleware::check('supplier_create', 5, 60);
+
+        $controller = $GLOBALS['container']->get(SupplierController::class);
+        $body       = $request->getAllBody();
+        return $controller->create($body);
+    });
+
+    // Update supplier
+    $router->put('/suppliers/:id', function (Request $request, array $params): array {
+        AuthMiddleware::requireAdmin();
+        CsrfMiddleware::verifyCsrf();
+        RateLimitMiddleware::check('supplier_update', 5, 60);
+
+        $controller = $GLOBALS['container']->get(SupplierController::class);
+        $body       = $request->getAllBody();
+        $id         = (int)($params['id'] ?? ($body['id'] ?? 0));
+
+        if ($id <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Supplier ID required',
+                'code'    => 400,
+            ];
+        }
+
+        return $controller->update($id, $body);
+    });
+
+    // Delete / hard delete supplier
+    $router->delete('/suppliers/:id', function (Request $request, array $params): array {
+        AuthMiddleware::requireAdmin();
+        CsrfMiddleware::verifyCsrf();
+        RateLimitMiddleware::check('supplier_delete', 5, 60);
+
+        $controller = $GLOBALS['container']->get(SupplierController::class);
+        $id         = (int)($params['id'] ?? 0);
+        $hard       = $request->getQuery('hard') === 'true';
+
+        if ($id <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Supplier ID required',
+                'code'    => 400,
+            ];
+        }
+
+        return $hard ? $controller->hardDelete($id) : $controller->delete($id);
+    });
+});

@@ -1,0 +1,493 @@
+/* Account Page Layout - Uses globals.css design tokens */
+
+.account-page-wrapper {
+    /* Refined gold shadow */
+    box-shadow: var(--shadow-gold), 0 0 0 1px var(--color-gold-light);
+    background-color: var(--color-white);
+    max-width: auto;
+    margin: 40px auto;
+    padding: 20px;
+    font-family: var(--font-primary);
+    font-style: italic;
+}
+
+.account-header {
+    text-align: center;
+    margin-bottom: 50px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 20px;
+}
+
+.page-title {
+    /* Modern Typeface Refinement */
+    font-family: Georgia, serif;
+    font-size: 3.8rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    margin-bottom: 5px;
+}
+
+.page-subtitle {
+    font-size: 1.2rem;
+    color: #555;
+    font-weight: 300;
+}
+
+.account-content-grid {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    gap: 0px;
+    margin-bottom: 60px;
+}
+
+/* Card Styling */
+
+.section-card {
+    border: 1px solid #E0E0E0;
+    /* Subtle border */
+    padding: 30px;
+    background-color: #FDFDFD;
+    /* Subtle internal gold glow on focus */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 0 0 1px #FFD70000;
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.section-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1), inset 0 0 5px 1px rgba(255, 215, 0, 0.5);
+}
+
+.card-heading {
+    font-family: Georgia, serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+}
+
+.card-subheading {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 25px;
+}
+
+/* Forms and Inputs */
+
+.form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-style: normal;
+}
+
+.login-form input[type="email"],
+.login-form input[type="password"] {
+    box-shadow: none;
+    padding: 12px 10px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    font-style: normal;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.login-form input:focus {
+    border-color: var(--color-gold);
+    box-shadow: var(--shadow-gold);
+    outline: none;
+}
+
+.remember-me {
+    box-shadow: none;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+#remember {
+    border: none;
+    box-shadow: none;
+}
+
+.remember-me label {
+
+    font-weight: 400;
+    margin-left: 10px;
+}
+
+.btn-primary,
+.btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid #000;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    margin-top: 5px;
+    /* Reduced gap for primary buttons */
+}
+
+.btn-primary {
+    background-color: #000;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-gold);
+    color: var(--color-black);
+    border-color: var(--color-gold);
+}
+
+.btn-secondary {
+    background-color: #fff;
+    color: #000;
+    border: 2px solid #000;
+    text-transform: uppercase;
+    margin-top: 20px;
+}
+
+.btn-secondary:hover {
+    background-color: #000;
+    color: #fff;
+}
+
+.forgot-link a {
+    color: #333;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    display: block;
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* New Customer Benefits */
+
+.benefit-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.benefit-list li {
+    position: relative;
+    padding: 8px 0 8px 20px;
+    font-size: 0.95rem;
+    color: #333;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.benefit-list li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--color-gold);
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.benefit-list li:last-child {
+    border-bottom: none;
+}
+
+/* Newsletter Section */
+
+.newsletter-section {
+    max-width: 600px;
+    margin: 0 auto 50px auto;
+    text-align: center;
+    padding: 30px;
+    border: 1px solid #E0E0E0;
+    background-color: #fff;
+}
+
+.newsletter-heading {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.newsletter-text {
+    color: #555;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+.newsletter-form {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.newsletter-form input {
+    flex-grow: 1;
+    max-width: 300px;
+    padding: 10px;
+    border: 1px solid #000;
+    font-style: normal;
+}
+
+.btn-tertiary {
+    padding: 10px 15px;
+    background-color: #000;
+    color: #fff;
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.btn-tertiary:hover {
+    background-color: #333;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .account-content-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .newsletter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .newsletter-form input {
+        max-width: none;
+    }
+}
+
+/* --- MY ACCOUNT DASHBOARD STYLES --- */
+
+.my-account-dashboard {
+    padding-top: 20px;
+    padding-bottom: 80px;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.dashboard-card {
+    border: 1px solid #E0E0E0;
+    padding: 30px;
+    background-color: #FFFFFF;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    font-style: italic;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+    /* Reset left padding for initial styling before specific overrides */
+    padding-left: 30px;
+    width: 100%;
+}
+
+.dashboard-card:hover {
+    border-color: var(--color-gold);
+    box-shadow: var(--shadow-lg);
+}
+
+/* 1. Profile Snapshot (Information/Identity) - Blue Hint */
+.profile-snapshot {
+    background-color: #F8FCFF;
+    border-left: 5px solid #007bff;
+}
+
+.profile-snapshot:hover {
+    background-color: #F0F8FF;
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.15);
+}
+
+/* 2. Activity Summary (History/Tracking) - Gold/Orange Hint */
+.activity-summary {
+    background-color: #FFFDF8;
+}
+
+.activity-summary:hover {
+    background-color: #FFFBE6;
+}
+
+/* 3. Settings & Preferences (Configuration/Security) - Grey/Silver Hint */
+.settings-preferences {
+    background-color: #F7F7F7;
+}
+
+.settings-preferences:hover {
+    background-color: #F2F2F2;
+}
+
+.recommendations {
+    background-color: #F8FFF8;
+}
+
+.recommendations:hover {
+    background-color: #F0FFF0;
+
+}
+
+/* --- VISUAL CLARITY AND TYPOGRAPHY --- */
+
+.dashboard-card .card-heading {
+    font-family: Georgia, serif;
+    color: #000;
+    font-size: 2.1rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #D0D0D0;
+    letter-spacing: 0.5px;
+}
+
+.profile-snapshot p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 12px;
+    font-weight: 400;
+}
+
+.profile-snapshot strong {
+    font-weight: 700;
+    color: #000;
+    font-style: normal;
+}
+
+/* --- LISTS AND LINKS (Making links look more clickable) --- */
+
+.activity-list,
+.settings-list,
+.recommendation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.activity-list li,
+.settings-list li,
+.recommendation-list li {
+    padding: 10px 0;
+    font-size: 1rem;
+    border-bottom: 1px solid #EAEAEA;
+    transition: background-color 0.2s;
+}
+
+.activity-list li:hover,
+.settings-list li:hover,
+.recommendation-list li:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+    /* Subtle row highlight on hover */
+}
+
+.activity-list li:last-child,
+.settings-list li:last-child,
+.recommendation-list li:last-child {
+    border-bottom: none;
+}
+
+.activity-list a,
+.settings-list a,
+.recommendation-list a {
+    display: block;
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0;
+    font-style: normal;
+}
+
+.activity-list a:hover,
+.settings-list a:hover,
+.recommendation-list a:hover {
+    color: var(--color-gold);
+}
+
+.activity-list .status-completed {
+    color: #4CAF50;
+    font-weight: 700;
+    font-style: normal;
+}
+
+.activity-list .status-pending {
+    color: var(--color-gold);
+    font-weight: 700;
+    font-style: normal;
+}
+
+
+
+.dashboard-link {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 15px;
+    font-size: 0.95rem;
+    font-style: normal;
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #000;
+    text-transform: uppercase;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+
+.dashboard-link:hover {
+    background-color: var(--color-gold);
+    color: var(--color-black);
+    border-color: var(--color-gold);
+    text-decoration: none;
+}
+
+.dashboard-logout {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.logout-btn {
+    width: 300px;
+    max-width: 100%;
+    margin: 0 auto;
+    background-color: #DC3545;
+    color: #fff;
+    border: 2px solid #DC3545;
+    padding: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.logout-btn:hover {
+    background-color: #C82333;
+    border-color: #C82333;
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+}
+
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+
+.address-card {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 0;
+    padding: 8px;
+    font-family: var(--font-primary);
+    font-size: 14px;
+    color: var(--color-gray-800);
+    line-height: 1.2;
+    box-shadow: var(--shadow-sm);
+    max-width: 400px;
+    text-align: center;
+    text-transform: capitalize;
+}

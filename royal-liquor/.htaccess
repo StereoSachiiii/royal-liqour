@@ -1,0 +1,8 @@
+# Enable rewriting
+RewriteEngine On
+
+# Route all /api/v1/* requests to /admin/api/index.php
+# Preserve the original request URI for the router
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/v1/(.*)$ admin/api/index.php [L,QSA]
