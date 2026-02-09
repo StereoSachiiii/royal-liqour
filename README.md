@@ -2,7 +2,7 @@
 
 A production-grade e-commerce application built strictly with **Vanilla PHP** and **Pure JavaScript**.
 
-> 🚫 **No Frameworks**. No Laravel. No React. No jQuery. Just pure, foundational engineering.
+> 🚫 **No Frameworks**.
 
 ## 🌟 Key Highlights
 
